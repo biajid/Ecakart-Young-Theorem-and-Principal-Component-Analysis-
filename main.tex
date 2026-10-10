@@ -1,0 +1,5172 @@
+
+
+\documentclass[11pt]{article}
+
+% =================================================
+% Packages
+% =================================================
+
+% Page layout
+\usepackage[margin=1in]{geometry}
+
+% Mathematical packages
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{bm}
+\usepackage{comment}
+% Algorithms
+\usepackage[ruled,vlined]{algorithm2e}
+
+% Lists and tables
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+
+% Figures and geometric illustrations
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,calc,positioning}
+
+% Colors and code listings
+\usepackage{xcolor}
+\usepackage{verbatim}
+\usepackage{listings}
+
+% Hyperlinks
+\usepackage[
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=blue
+]{hyperref}
+
+% =================================================
+% Code Listing Style
+% =================================================
+
+\lstset{
+    frame=single,
+    breaklines=true,
+    basicstyle=\small\ttfamily,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{purple},
+    numbers=left,
+    numberstyle=\tiny\color{gray}
+}
+
+% =================================================
+% Formatting
+% =================================================
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.3cm}
+
+% =================================================
+% Theorem Environments
+% =================================================
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{example}[theorem]{Example}
+
+% =================================================
+% Title
+% =================================================
+
+\title{
+\textbf{
+Principal Component Analysis and Its
+Mathematical Justification Through the
+Eckart--Young Theorem
+}\\[0.3cm]
+\large
+A Step-by-Step Development from Geometric
+Intuition to Optimal Low-Rank Approximation
+}
+
+\author{Biajid Chowdhury}
+
+\date{\today}
+
+% =================================================
+% DOCUMENT BEGINS
+% =================================================
+
+\begin{document}
+
+\maketitle
+
+% =================================================
+% ABSTRACT
+% =================================================
+
+% Insert the abstract here.
+
+
+
+
+% =================================================
+% MAIN CONTENT
+% =================================================
+
+% We will develop each section individually.
+
+
+
+
+
+% =================================================
+% ABSTRACT
+% =================================================
+
+\begin{abstract}
+
+In recent years, Principal Component Analysis (PCA) has gained
+enormous popularity in data science, machine learning, and
+statistical analysis. Despite its widespread application,
+however, its underlying mathematical justification is often
+given surprisingly little attention, particularly in
+introductory data science curricula. Instead, PCA is
+frequently introduced as a black-box computational tool:
+subtract the mean, compute the Singular Value Decomposition
+(SVD), retain a few dominant components, and proceed with
+the transformed data. Although this approach is convenient,
+it leaves a fundamental mathematical question unanswered:
+\textit{Why should these particular components provide the
+best possible lower-dimensional representation of the
+original data?}
+
+Fortunately, with relatively modest mathematical
+background and some geometric intuition, one can
+appreciate the remarkable beauty of PCA and understand
+why it works. Such an understanding not only removes
+the mystery behind the algorithm but also allows
+one to apply it more intelligently and effectively.
+
+In this note, we develop Principal Component Analysis
+step-by-step, beginning with the geometric interpretation
+of data projection, variance, and Singular Value
+Decomposition. We then explain how principal components
+are obtained, how they transform the original data,
+and how a lower-dimensional representation can be
+used to reconstruct an approximation of the original
+dataset. Finally, we establish the mathematical
+optimality of this reconstruction through the
+Eckart--Young--Mirsky theorem, examining both the
+Frobenius and spectral norms. Our objective is to
+bridge the gap between the computational recipe
+commonly taught in data science and the elegant
+linear algebra that justifies it.
+
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+
+
+% =================================================
+\section{Introduction}
+% =================================================
+
+In modern data science and machine learning, one frequently
+encounters datasets involving hundreds, thousands, or even
+millions of variables. Although such high-dimensional data
+may contain valuable information, working directly with
+all these variables is not always computationally efficient
+or mathematically relevant. Furthermore, many of
+these variables may be strongly correlated, meaning that
+a considerable amount of the variation in the data can
+often be represented using substantially fewer dimensions.
+
+This naturally raises an interesting question:
+\textit{Can we represent a high-dimensional dataset
+using only a few carefully chosen directions, while
+preserving as much of its original variation as possible?}
+
+Principal Component Analysis (PCA) provides an elegant
+mathematical answer to this question. The central idea
+is remarkably simple: rather than describing observations
+using the original coordinate axes, we construct a new
+set of mutually orthogonal directions along which the
+data exhibits the greatest variation. By retaining only
+the most significant of these directions, we obtain
+a lower-dimensional representation of the original
+dataset.
+
+At first glance, the computational procedure appears
+almost deceptively simple. We begin by subtracting
+the mean of each variable, perform a Singular Value
+Decomposition (SVD) of the centered data matrix, retain
+a few singular vectors corresponding to the largest
+singular values, and project the observations onto
+the subspace spanned by these vectors.
+
+But why should this procedure work?
+
+More precisely, why should the singular vectors
+associated with the largest singular values identify
+the directions of maximum variation? What exactly
+happens to the original observations when we project
+them onto these directions? And perhaps most
+importantly, if we reconstruct the original dataset
+from its lower-dimensional representation, can
+we guarantee that the resulting approximation is
+the best possible one?
+
+These questions reveal that PCA is much more than
+a convenient computational algorithm. Beneath its
+apparently simple implementation lies a beautiful
+connection among orthogonal projections, eigenvalue
+problems, matrix norms, and low-rank matrix
+approximation.
+
+The mathematical foundation of this connection is
+provided by two closely related optimization
+principles. First, the principal directions maximize
+the variance captured by an orthogonal projection
+onto a subspace of prescribed dimension. Second,
+the same subspace minimizes the squared reconstruction
+error when the projected observations are mapped
+back into the original feature space.
+
+The second property is closely connected to the
+celebrated Eckart--Young theorem, which establishes
+the optimality of truncated Singular Value
+Decomposition among all matrices of a prescribed
+maximum rank. In particular, the theorem shows
+that retaining the largest singular values produces
+an approximation with the smallest possible error,
+measured in either the Frobenius norm or the
+spectral norm.
+
+In this note, our objective is not merely to
+present another recipe for performing PCA. Rather,
+we wish to develop the mathematical ideas that
+make the procedure work, beginning with familiar
+concepts from elementary linear algebra and
+gradually arriving at its rigorous justification.
+
+We begin with a geometric discussion of
+high-dimensional data, orthogonal projections,
+and the meaning of variance along a given direction.
+We then formulate the problem of finding directions
+of maximum variance and establish its connection
+to the eigenvectors of the covariance matrix.
+
+Next, we revisit Singular Value Decomposition
+from the perspective of PCA. We explain the
+geometric significance of the left and right
+singular vectors, the role of singular values,
+and how the principal components arise naturally
+from this decomposition.
+
+Having established these ideas, we examine the
+process of dimensionality reduction and
+reconstruction. In particular, we investigate
+what information is retained, what information
+is discarded, and how the reconstruction error
+can be measured mathematically.
+
+Finally, we state and prove the Eckart--Young
+theorem for both the Frobenius norm and the
+spectral norm. These proofs allow us to
+establish precisely why the truncated SVD
+provides an optimal low-rank approximation,
+rather than simply accepting its optimality
+as a computational fact.
+
+Throughout the discussion, we emphasize
+geometric intuition alongside mathematical
+rigor. Whenever possible, abstract arguments
+will be accompanied by concrete examples,
+and the theoretical results will ultimately
+be verified through numerical experiments
+using Python.
+
+Our hope is that, by the end of this note,
+PCA will no longer appear as an obscure
+black-box tool, but rather as a natural
+consequence of some of the most fundamental
+and elegant ideas in scientific computation and numerical linear algebra.
+
+
+
+% =================================================
+\section{Prerequisite Mathematical Background}
+% =================================================
+
+The primary objective of this note is to develop
+the mathematical justification of Principal Component
+Analysis rather than to introduce the elementary
+concepts of linear algebra from the beginning.
+Accordingly, we assume that the reader has some
+familiarity with the fundamental ideas ordinarily
+covered in an undergraduate linear algebra course.
+
+In particular, the reader should be comfortable
+with the following concepts:
+
+\begin{itemize}[leftmargin=1.5cm]
+
+    \item \textbf{Vector spaces and subspaces:}
+    Linear independence, basis, dimension, rank,
+    null space, and the rank-nullity theorem.
+
+    \item \textbf{Inner products and orthogonality:}
+    The Euclidean inner product, orthonormal bases,
+    orthogonal matrices, and orthogonal projections
+    onto subspaces.
+
+    \item \textbf{Eigenvalues and eigenvectors:}
+    Eigenvalue decomposition, diagonalization,
+    symmetric matrices, and the spectral theorem
+    for real symmetric matrices.
+
+    \item \textbf{Singular Value Decomposition (SVD):}
+    The factorization
+    \[
+        A = U\Sigma V^T,
+    \]
+    including the meaning of singular values,
+    left and right singular vectors, and their
+    relationship to the eigenvalues and
+    eigenvectors of $AA^T$ and $A^TA$.
+
+    \item \textbf{Basic matrix operations:}
+    Matrix multiplication, transposition,
+    matrix-vector multiplication, and elementary
+    properties of matrix norms.
+
+\end{itemize}
+
+Readers who are unfamiliar with these topics,
+or who have studied them previously but would
+benefit from a review, are encouraged to consult
+Gilbert Strang's \textit{Linear
+Algebra and Its Applications} before proceeding. In particular,
+the discussions of orthogonality, projections,
+eigenvalues, symmetric matrices, and Singular
+Value Decomposition provide an excellent
+foundation for understanding the material
+developed here.
+
+Nevertheless, we do not expect the reader
+to be familiar with Principal Component
+Analysis, the Eckart--Young theorem, or
+the optimization problems associated with
+low-rank approximation. These topics will
+be developed carefully in the following
+sections.
+
+We will also introduce the Frobenius and
+spectral norms explicitly and explain their
+geometric significance before using them
+in the proofs. Similarly, the necessary
+statistical concepts, particularly variance
+and covariance, will be reviewed in the
+context of PCA.
+
+Although some of our arguments will involve
+optimization, no advanced background in
+optimization theory is assumed. The required
+results will be motivated and established
+using elementary linear algebra whenever
+possible.
+
+Finally, we emphasize that this note is
+intended to be read with pencil and paper.
+The reader is encouraged to verify the
+matrix identities, work through the examples,
+and examine the geometric meaning of each
+transformation. Our goal is not simply
+to arrive at the correct formulas, but
+to understand why those formulas must
+take the form they do.
+
+
+
+
+
+
+
+
+
+% =================================================
+\section{A Brief Review of Singular Value
+Decomposition}
+% =================================================
+
+Before proceeding to the geometric and mathematical
+development of Principal Component Analysis,
+it is worthwhile to briefly revisit the Singular
+Value Decomposition (SVD) of a matrix.
+
+We do not intend to provide a complete treatment
+of SVD here, as this is ordinarily covered in
+undergraduate linear algebra courses. Instead,
+we shall recall its fundamental properties,
+particularly the relationship between singular
+vectors, the row space, the column space, and
+orthogonal projections.
+
+These ideas will play a central role in our
+subsequent development of PCA.
+
+% -------------------------------------------------
+\subsection{Row Space and Column Space}
+% -------------------------------------------------
+
+Let $A\in\mathbb{R}^{m\times n}$ be an arbitrary
+real matrix.
+
+There are two important vector spaces naturally
+associated with $A$.
+
+First, consider the columns of $A$ as vectors
+in $\mathbb{R}^m$. Their linear combinations
+form the \textit{column space} of $A$, denoted by
+
+\[
+\operatorname{Col}(A)
+=
+\operatorname{span}\{a_1,a_2,\ldots,a_n\},
+\]
+
+where $a_j$ denotes the $j$th column of $A$.
+
+In other words, the column space consists of
+all vectors that can be obtained by taking
+linear combinations of the columns of $A$.
+
+Similarly, we may consider each row of $A$
+as a vector in $\mathbb{R}^n$.
+The linear combinations of these row vectors
+form the \textit{row space} of $A$, denoted by
+
+\[
+\operatorname{Row}(A)
+=
+\operatorname{Col}(A^T).
+\]
+
+Thus, the column space is a subspace of
+$\mathbb{R}^m$, whereas the row space is
+a subspace of $\mathbb{R}^n$.
+
+Although these two spaces generally belong
+to different Euclidean spaces, an important
+theorem from elementary linear algebra tells
+us that they have the same dimension:
+
+\[
+\boxed{
+\dim\operatorname{Col}(A)
+=
+\dim\operatorname{Row}(A)
+=
+\operatorname{rank}(A).
+}
+\]
+
+If $\operatorname{rank}(A)=r$, both spaces
+therefore admit bases consisting of
+$r$ linearly independent vectors.
+
+There is, however, no reason to insist
+that these bases consist of the original
+rows or columns of $A$.
+
+Indeed, it is often much more convenient
+to construct orthonormal bases for these
+spaces. Singular Value Decomposition provides
+precisely such bases, together with an
+additional and rather remarkable structure.
+
+% -------------------------------------------------
+\subsection{The Singular Value Decomposition Theorem}
+% -------------------------------------------------
+
+\begin{theorem}[Singular Value Decomposition]
+
+For every real matrix
+$A\in\mathbb{R}^{m\times n}$,
+there exist orthogonal matrices
+
+\[
+U\in\mathbb{R}^{m\times m},
+\qquad
+V\in\mathbb{R}^{n\times n},
+\]
+
+and a rectangular diagonal matrix
+
+\[
+\Sigma\in\mathbb{R}^{m\times n},
+\]
+
+such that
+
+\[
+\boxed{A=U\Sigma V^T.}
+\]
+
+The matrices $U$ and $V$ satisfy
+
+\[
+U^TU=UU^T=I_m,
+\qquad
+V^TV=VV^T=I_n.
+\]
+
+The diagonal entries of $\Sigma$ are
+nonnegative real numbers, called the
+\textit{singular values} of $A$.
+
+If $\operatorname{rank}(A)=r$, the positive
+singular values can be arranged in
+nonincreasing order:
+
+\[
+\sigma_1\geq\sigma_2\geq
+\cdots\geq\sigma_r>0.
+\]
+
+All remaining diagonal entries of
+$\Sigma$ are zero.
+
+\end{theorem}
+
+The columns of $U$ are called the
+\textit{left singular vectors}, while
+the columns of $V$ are called the
+\textit{right singular vectors}.
+
+We write
+
+\[
+U=
+\begin{bmatrix}
+u_1 & u_2 & \cdots & u_m
+\end{bmatrix},
+\]
+
+and
+
+\[
+V=
+\begin{bmatrix}
+v_1 & v_2 & \cdots & v_n
+\end{bmatrix}.
+\]
+
+Since these two matrices are orthogonal,
+their respective columns form
+orthonormal bases of $\mathbb{R}^m$
+and $\mathbb{R}^n$.
+
+More importantly, the first $r$
+singular vectors provide orthonormal
+bases for the fundamental spaces
+associated with $A$:
+
+\[
+\boxed{
+\operatorname{Col}(A)
+=
+\operatorname{span}
+\{u_1,\ldots,u_r\}
+}
+\]
+
+and
+
+\[
+\boxed{
+\operatorname{Row}(A)
+=
+\operatorname{span}
+\{v_1,\ldots,v_r\}.
+}
+\]
+
+Thus, SVD identifies orthonormal bases
+for both the column space and the
+row space of an arbitrary matrix.
+
+% -------------------------------------------------
+\subsection{How Are the Singular Vectors Obtained?}
+% -------------------------------------------------
+
+The singular values and singular vectors
+are closely related to the eigenvalue
+decompositions of $AA^T$ and $A^TA$.
+
+Starting from
+
+\[
+A=U\Sigma V^T,
+\]
+
+we obtain
+
+\[
+AA^T
+=
+U\Sigma\Sigma^TU^T,
+\]
+
+and similarly,
+
+\[
+A^TA
+=
+V\Sigma^T\Sigma V^T.
+\]
+
+Therefore, the columns of $U$ are
+eigenvectors of $AA^T$, while the
+columns of $V$ are eigenvectors
+of $A^TA$.
+
+The nonzero eigenvalues of these
+two symmetric matrices are identical,
+and are given by
+
+\[
+\boxed{\lambda_i=\sigma_i^2.}
+\]
+
+Consequently, the positive singular
+values are obtained by taking the
+square roots of the positive eigenvalues
+of either $AA^T$ or $A^TA$:
+
+\[
+\sigma_i=\sqrt{\lambda_i}.
+\]
+
+For each positive singular value,
+the corresponding left and right
+singular vectors satisfy
+
+\[
+\boxed{
+Av_i=\sigma_i u_i,
+\qquad
+A^Tu_i=\sigma_i v_i.
+}
+\]
+
+In particular, if $v_i$ is a normalized
+eigenvector of $A^TA$ corresponding
+to a positive eigenvalue $\sigma_i^2$,
+then
+
+\[
+\boxed{
+u_i=\frac{Av_i}{\sigma_i}.
+}
+\]
+
+Conversely, if $u_i$ is known, we can
+obtain the corresponding right singular
+vector through
+
+\[
+\boxed{
+v_i=\frac{A^Tu_i}{\sigma_i}.
+}
+\]
+
+These formulas apply whenever
+$\sigma_i>0$. The remaining singular
+vectors are chosen to complete the
+respective orthonormal bases.
+
+We may therefore interpret the
+singular value decomposition as a
+carefully coordinated pair of
+eigenvalue decompositions.
+
+It is worth emphasizing that singular
+vectors are not necessarily unique.
+Repeated singular values allow
+different choices of orthonormal bases
+within the corresponding singular
+subspaces. Nevertheless, the
+decomposition always exists.
+
+% -------------------------------------------------
+\subsection{The Reduced Singular Value Decomposition}
+% -------------------------------------------------
+
+Suppose $\operatorname{rank}(A)=r$.
+
+Instead of retaining all the columns
+of $U$ and $V$, we may retain only
+those corresponding to positive
+singular values.
+
+Define
+
+\[
+U_r=
+\begin{bmatrix}
+u_1 & \cdots & u_r
+\end{bmatrix}
+\in\mathbb{R}^{m\times r},
+\]
+
+\[
+V_r=
+\begin{bmatrix}
+v_1 & \cdots & v_r
+\end{bmatrix}
+\in\mathbb{R}^{n\times r},
+\]
+
+and
+
+\[
+\Sigma_r
+=
+\operatorname{diag}
+(\sigma_1,\ldots,\sigma_r).
+\]
+
+Then
+
+\[
+\boxed{
+A=U_r\Sigma_rV_r^T.
+}
+\]
+
+This is called the \textit{reduced}
+or \textit{compact} singular value
+decomposition.
+
+Equivalently, we may express $A$
+as a sum of rank-one matrices:
+
+\[
+\boxed{
+A=\sum_{i=1}^{r}
+\sigma_i u_i v_i^T.
+}
+\]
+
+Each term $\sigma_i u_i v_i^T$
+has rank one.
+
+This representation will become
+particularly useful when we discuss
+low-rank approximation and the
+Eckart--Young theorem.
+
+% -------------------------------------------------
+\subsection{The Geometric Meaning of SVD}
+% -------------------------------------------------
+
+Let us now consider the matrix $A$
+as a linear transformation
+
+\[
+A:\mathbb{R}^n\longrightarrow
+\mathbb{R}^m.
+\]
+
+For an arbitrary vector
+$x\in\mathbb{R}^n$, we have
+
+\[
+Ax=U\Sigma V^Tx.
+\]
+
+The transformation can be understood
+as three consecutive operations.
+
+First, $V^T$ expresses the input
+vector $x$ in the orthonormal
+coordinate system determined by
+the right singular vectors.
+
+Next, $\Sigma$ scales the resulting
+coordinates by the corresponding
+singular values. Coordinates associated
+with zero singular values are
+eliminated.
+
+Finally, $U$ expresses the resulting
+vector in the output space
+$\mathbb{R}^m$ using the left
+singular vectors.
+
+Thus, schematically,
+
+\[
+\boxed{
+x
+\xrightarrow{\;V^T\;}
+V^Tx
+\xrightarrow{\;\Sigma\;}
+\Sigma V^Tx
+\xrightarrow{\;U\;}
+Ax.
+}
+\]
+
+In particular, since
+
+\[
+Av_i=\sigma_i u_i,
+\]
+
+the transformation $A$ takes a
+right singular direction $v_i$
+and maps it to the corresponding
+left singular direction $u_i$,
+scaled by $\sigma_i$.
+
+Hence, the positive singular values
+describe the stretching factors
+along the corresponding singular
+directions.
+
+Geometrically, SVD identifies
+orthogonal input directions,
+their associated stretching
+factors, and the corresponding
+orthogonal output directions.
+
+% -------------------------------------------------
+\subsection{SVD and Orthogonal Projections}
+% -------------------------------------------------
+
+We now return to the row space
+and column space of $A$.
+
+Recall that the columns of $V_r$
+form an orthonormal basis of
+$\operatorname{Row}(A)$.
+
+Therefore, for any
+$x\in\mathbb{R}^n$, its
+orthogonal projection onto the
+row space is
+
+\[
+\boxed{
+P_{\operatorname{Row}(A)}x
+=
+V_rV_r^Tx.
+}
+\]
+
+Similarly, since the columns
+of $U_r$ form an orthonormal
+basis of $\operatorname{Col}(A)$,
+the orthogonal projection of
+any $y\in\mathbb{R}^m$ onto
+the column space is
+
+\[
+\boxed{
+P_{\operatorname{Col}(A)}y
+=
+U_rU_r^Ty.
+}
+\]
+
+An important distinction deserves
+attention here.
+
+The matrix $V_r^T$ does not itself
+perform the orthogonal projection
+onto the row space in the original
+ambient coordinates. Rather,
+
+\[
+V_r^Tx
+\]
+
+provides the coordinates of the
+row-space projection relative to
+the orthonormal basis
+$\{v_1,\ldots,v_r\}$.
+
+Multiplying these coordinates by
+$V_r$ reconstructs the projected
+vector in $\mathbb{R}^n$:
+
+\[
+V_r(V_r^Tx)=V_rV_r^Tx.
+\]
+
+The same interpretation applies
+to the column space:
+
+\[
+U_r^Ty
+\]
+
+provides the coordinates of the
+column-space projection, whereas
+
+\[
+U_r(U_r^Ty)=U_rU_r^Ty
+\]
+
+produces the actual projected
+vector in $\mathbb{R}^m$.
+
+Thus, we obtain the important
+identities
+
+\[
+\boxed{
+\begin{aligned}
+P_{\operatorname{Row}(A)}
+&=V_rV_r^T,\\[2mm]
+P_{\operatorname{Col}(A)}
+&=U_rU_r^T.
+\end{aligned}
+}
+\]
+
+These formulas are fundamental
+consequences of the geometry
+of SVD.
+
+% -------------------------------------------------
+\subsection{From the Row Space to the Column Space}
+% -------------------------------------------------
+
+There is another useful way to
+understand the transformation $A$.
+
+The Fundamental Theorem of Linear
+Algebra tells us that
+
+\[
+\mathbb{R}^n
+=
+\operatorname{Row}(A)
+\oplus
+\operatorname{Null}(A),
+\]
+
+where the two subspaces are orthogonal.
+
+Thus, any input vector
+$x\in\mathbb{R}^n$ can be
+decomposed uniquely as
+
+\[
+x=x_{\mathrm{row}}+
+x_{\mathrm{null}},
+\]
+
+where
+
+\[
+x_{\mathrm{row}}
+\in\operatorname{Row}(A),
+\qquad
+x_{\mathrm{null}}
+\in\operatorname{Null}(A).
+\]
+
+Applying $A$, we obtain
+
+\[
+Ax
+=
+Ax_{\mathrm{row}}
++
+Ax_{\mathrm{null}}.
+\]
+
+But $Ax_{\mathrm{null}}=0$.
+Consequently,
+
+\[
+\boxed{
+Ax=Ax_{\mathrm{row}}.
+}
+\]
+
+Therefore, the action of $A$
+depends only on the component
+of $x$ lying in its row space.
+
+The null-space component contributes
+nothing to the output.
+
+Furthermore, the resulting vector
+necessarily belongs to the column
+space of $A$.
+
+In this sense, $A$ takes the relevant
+information from its row space,
+stretches it along the singular
+directions, and maps it into
+its column space.
+
+Indeed, for the reduced SVD,
+
+\[
+Ax=U_r\Sigma_rV_r^Tx.
+\]
+
+The matrix $V_r^T$ extracts
+the row-space coordinates,
+$\Sigma_r$ scales them,
+and $U_r$ constructs the
+corresponding vector in
+the column space.
+
+This provides a particularly
+useful geometric interpretation
+of the singular value decomposition.
+
+% -------------------------------------------------
+\subsection{Why Is This Relevant to PCA?}
+% -------------------------------------------------
+
+When $A$ represents a dataset
+with features arranged along
+the rows and observations
+along the columns, each
+observation is a vector in
+$\mathbb{R}^m$.
+
+Thus, the left singular vectors
+$u_i$ belong to the same
+feature space as the
+original observations.
+
+As we shall establish in
+the subsequent sections,
+these vectors identify the
+principal directions along
+which the centered data
+exhibits variation.
+
+If we retain only the first
+$k$ left singular vectors,
+we obtain
+
+\[
+U_k=
+\begin{bmatrix}
+u_1 & \cdots & u_k
+\end{bmatrix}.
+\]
+
+The matrix
+
+\[
+\boxed{Z=U_k^TA}
+\]
+
+then expresses each observation
+in terms of these $k$
+orthonormal directions.
+
+We may reconstruct an
+approximation in the
+original feature space by
+
+\[
+\boxed{
+\widehat{A}
+=
+U_kZ
+=
+U_kU_k^TA.
+}
+\]
+
+At this stage, we have only
+described the algebraic
+meaning of this operation.
+
+We have not yet established
+why the first $k$ singular
+vectors should be preferred
+over other possible directions.
+
+That question forms the
+mathematical heart of PCA,
+and we shall address it
+through geometric intuition,
+variance maximization, and
+eventually the Eckart--Young
+theorem.
+
+
+
+\begin{comment}
+    
+% =================================================
+\section{Geometric Motivation for Principal
+Component Analysis}
+% =================================================
+The fundamental idea behind PCA is that a collection of
+high-dimensional observations may exhibit most
+of its variation along only a few directions.
+If we can identify these directions, we may be
+able to describe the dataset using substantially
+fewer coordinates without losing too much of
+its original structure.
+
+But what exactly do we mean by a direction
+that captures the variation of a dataset?
+And how can we determine which direction
+is the most important?
+
+We begin with a simple geometric interpretation.
+
+% -------------------------------------------------
+\subsection{Representing a Dataset Geometrically}
+% -------------------------------------------------
+
+Suppose we have $n$ observations, each described
+by $m$ features. We represent the dataset by
+
+\[
+X =
+\begin{bmatrix}
+| & | & & |\\
+x_1 & x_2 & \cdots & x_n\\
+| & | & & |
+\end{bmatrix}
+\in \mathbb{R}^{m\times n},
+\]
+
+where each column $x_j\in\mathbb{R}^m$
+represents one observation, and each row
+corresponds to a particular feature.
+
+For example, if our observations are individuals,
+the rows might represent age, income, height,
+or years of education. Each individual is
+therefore represented by a point in an
+$m$-dimensional Euclidean space.
+
+When $m=2$, the observations form a collection
+of points in the plane. When $m=3$, they form
+a cloud of points in three-dimensional space.
+
+For larger $m$, direct visualization becomes
+difficult, but the underlying geometry
+remains unchanged.
+
+Now imagine that this cloud of points is
+not distributed uniformly in every direction.
+Instead, it may be elongated along some
+particular direction.
+
+Intuitively, that direction should contain
+more information about how the observations
+differ from one another than a direction
+along which the points are tightly clustered.
+
+This observation provides the initial
+motivation for PCA.
+
+The idea is to identify a new system of
+orthogonal coordinate axes that reflects
+the dominant directions of variation
+in the dataset.
+
+Rather than describing each observation
+using all the original features, we may
+then describe it using only a few
+coordinates along these new axes.
+
+But how does PCA accomplish this?
+Let us first examine the computational
+procedure before investigating why
+it is mathematically justified.
+
+% -------------------------------------------------
+\subsection{The Principal Component Analysis
+Procedure}
+% -------------------------------------------------
+
+The basic PCA procedure can be summarized
+in a few relatively simple steps.
+
+Although different textbooks may arrange
+the data matrix differently, we will
+consistently assume that features occupy
+the rows and observations occupy the
+columns.
+
+\subsubsection*{Step 1: Center the Data}
+
+We begin by computing the mean
+observation vector
+
+\[
+\bar{x}=
+\frac{1}{n}\sum_{j=1}^{n}x_j.
+\]
+
+Each observation is then centered
+by subtracting this mean:
+
+\[
+a_j=x_j-\bar{x}.
+\]
+
+The resulting centered data matrix is
+
+\[
+\boxed{
+A=X-\bar{x}\mathbf{1}_n^T,
+}
+\]
+
+where $\mathbf{1}_n$ is the vector
+of $n$ ones.
+
+Notice that
+
+\[
+\sum_{j=1}^{n}a_j=0.
+\]
+
+Consequently, the center of the
+data cloud has been translated
+to the origin.
+
+This step is important because
+our objective is to measure
+the variation of observations
+around their mean, rather than
+their distance from an arbitrarily
+chosen origin.
+
+From now on, unless stated
+otherwise, $A$ denotes the
+centered data matrix.
+
+\subsubsection*{Step 2: Compute the SVD}
+
+We compute the Singular Value
+Decomposition of $A$:
+
+\[
+\boxed{
+A=U\Sigma V^T.
+}
+\]
+
+Recall from Section 3 that
+the columns of $U$ are
+the left singular vectors
+and the columns of $V$
+are the right singular vectors.
+
+The positive singular values
+are arranged in decreasing order:
+
+\[
+\sigma_1\geq\sigma_2
+\geq\cdots\geq\sigma_r>0,
+\]
+
+where $r=\operatorname{rank}(A)$.
+
+Since $A$ is an $m\times n$
+matrix, its left singular
+vectors belong to $\mathbb{R}^m$,
+the original feature space.
+
+Thus, these vectors provide
+candidate directions along
+which we may describe the
+observations.
+
+But which of these directions
+should we retain?
+
+The PCA procedure selects
+those corresponding to the
+largest singular values.
+
+We shall shortly investigate
+why this choice is justified.
+
+\subsubsection*{Step 3: Select the Principal
+Directions}
+
+Suppose we wish to represent
+the original $m$-dimensional
+observations using only
+$k$ coordinates, where
+
+\[
+1\leq k\leq r.
+\]
+
+We retain the first $k$
+columns of $U$:
+
+\[
+\boxed{
+U_k=
+\begin{bmatrix}
+u_1 & u_2 & \cdots & u_k
+\end{bmatrix}
+\in\mathbb{R}^{m\times k}.
+}
+\]
+
+These vectors form an
+orthonormal basis for a
+$k$-dimensional subspace
+of the original feature space.
+
+We call this the
+\textit{principal subspace}.
+
+At this stage, we have
+replaced the original $m$
+coordinate directions by
+$k$ carefully selected
+orthogonal directions.
+
+Notice that $U_k$ contains
+directions, not transformed
+observations.
+
+To obtain the new coordinates
+of our observations, one
+additional operation is required.
+
+\subsubsection*{Step 4: Project the Data
+onto the Principal Directions}
+
+We compute
+
+\[
+\boxed{
+Z=U_k^TA.
+}
+\]
+
+Let us examine the dimensions:
+
+\[
+\underbrace{U_k^T}_{k\times m}
+\underbrace{A}_{m\times n}
+=
+\underbrace{Z}_{k\times n}.
+\]
+
+The $j$th column of $Z$ is
+
+\[
+z_j=U_k^Ta_j.
+\]
+
+In particular,
+
+\[
+z_j=
+\begin{bmatrix}
+u_1^Ta_j\\
+u_2^Ta_j\\
+\vdots\\
+u_k^Ta_j
+\end{bmatrix}.
+\]
+
+Thus, each entry measures
+how much the observation
+extends along a particular
+principal direction.
+
+The original observation
+$a_j\in\mathbb{R}^m$
+has now been represented
+by a new vector
+
+\[
+z_j\in\mathbb{R}^k.
+\]
+
+This is the actual
+dimensionality reduction.
+
+The matrix $Z$ is commonly
+called the matrix of
+\textit{principal component scores}.
+
+An interesting observation
+follows directly from SVD.
+Since
+
+\[
+A=U\Sigma V^T,
+\]
+
+and the columns of $U$
+are orthonormal,
+
+\[
+\boxed{
+Z=U_k^TA=\Sigma_k V_k^T,
+}
+\]
+
+where $\Sigma_k$ contains
+the first $k$ positive
+singular values and $V_k$
+contains the corresponding
+right singular vectors.
+
+Therefore, the principal
+component scores are precisely
+the corresponding right
+singular-vector coordinates
+scaled by the singular values.
+
+\subsubsection*{Step 5: Reconstruct the
+Original Observations}
+
+Suppose we now wish to
+return from the reduced
+$k$-dimensional representation
+to the original feature space.
+
+We compute
+
+\[
+\boxed{
+\widehat{A}=U_kZ.
+}
+\]
+
+Substituting $Z=U_k^TA$,
+
+\[
+\boxed{
+\widehat{A}=U_kU_k^TA.
+}
+\]
+
+Notice the dimensions:
+
+\[
+\underbrace{U_k}_{m\times k}
+\underbrace{Z}_{k\times n}
+=
+\underbrace{\widehat{A}}_{m\times n}.
+\]
+
+Thus, the reconstructed
+data matrix has the same
+dimensions as the original
+centered data matrix.
+
+However, in general,
+
+\[
+\widehat{A}\neq A.
+\]
+
+The reconstructed observations
+retain only the components
+lying in the selected principal
+subspace.
+
+The components orthogonal to
+that subspace are discarded.
+
+If we wish to reconstruct
+the observations on their
+original, uncentered scale,
+we must also restore the mean:
+
+\[
+\boxed{
+\widehat{X}
+=
+\widehat{A}
++
+\bar{x}\mathbf{1}_n^T.
+}
+\]
+
+This completes the basic
+PCA procedure.
+
+% -------------------------------------------------
+\subsection{What Have We Actually Accomplished?}
+% -------------------------------------------------
+
+It is worth reflecting on what
+these operations have achieved.
+
+Originally, every observation
+was represented by $m$
+features having familiar
+interpretations, such as age,
+income, and education.
+
+After the transformation
+
+\[
+Z=U_k^TA,
+\]
+
+the observations are described
+using only $k$ coordinates.
+
+However, the new coordinates
+no longer represent individual
+features in the original sense.
+
+For example, a principal
+component might be a linear
+combination of age, income,
+and education, rather than
+any one of these quantities
+individually.
+
+Thus, dimensionality reduction
+comes with a trade-off:
+the new coordinates may be
+mathematically more economical,
+but their interpretation
+is often less immediate.
+
+Nevertheless, the transformation
+is not mysterious.
+
+The coefficients defining
+each new coordinate are
+stored explicitly in the
+columns of $U_k$.
+
+When we reconstruct the
+observations through
+
+\[
+\widehat{A}=U_kZ,
+\]
+
+we return to the original
+feature coordinates.
+
+The rows of $\widehat{A}$
+can therefore again be
+interpreted as age, income,
+education, and so forth.
+
+Their numerical values,
+however, are generally
+different from those
+in the original matrix.
+
+Geometrically, each observation
+has been replaced by its
+orthogonal projection onto
+the principal subspace.
+
+This process may suppress
+small-scale fluctuations
+and can be useful for
+denoising when the discarded
+directions predominantly
+contain noise.
+
+However, PCA does not
+automatically distinguish
+noise from meaningful
+variation. Information
+contained in discarded
+directions is lost,
+whether it represents
+noise or an important
+feature of the dataset.
+
+% -------------------------------------------------
+\subsection{Why Do We Retain the Largest
+Singular Values?}
+% -------------------------------------------------
+
+We have now described the
+PCA algorithm, but have
+not yet established its
+mathematical justification.
+
+In particular, why should
+we retain the left singular
+vectors corresponding to
+the largest singular values?
+
+Let us begin with a single
+unit vector
+
+\[
+u\in\mathbb{R}^m,
+\qquad
+u^Tu=1.
+\]
+
+Suppose we project every
+centered observation onto
+this direction.
+
+The projected coordinate
+of the $j$th observation is
+
+\[
+z_j=u^Ta_j.
+\]
+
+Since the original data
+is centered, the projected
+coordinates also have
+mean zero.
+
+Their sample variance is
+
+\[
+\operatorname{Var}(u^TA)
+=
+\frac{1}{n-1}
+\sum_{j=1}^{n}(u^Ta_j)^2,
+\qquad n\geq 2.
+\]
+
+Notice that
+
+\[
+\begin{aligned}
+\sum_{j=1}^{n}(u^Ta_j)^2
+&=
+\sum_{j=1}^{n}
+u^Ta_ja_j^Tu\\
+&=
+u^T
+\left(
+\sum_{j=1}^{n}a_ja_j^T
+\right)u\\
+&=u^TAA^Tu.
+\end{aligned}
+\]
+
+Consequently,
+
+\[
+\boxed{
+\operatorname{Var}(u^TA)
+=
+\frac{1}{n-1}u^TAA^Tu.
+}
+\]
+
+We can therefore formulate
+the problem of finding a
+direction of maximum variance
+as follows:
+
+\[
+\boxed{
+\max_{\|u\|_2=1}
+u^TAA^Tu.
+}
+\]
+
+Now recall that the left
+singular vectors of $A$
+are eigenvectors of $AA^T$.
+
+Indeed,
+
+\[
+AA^Tu_i=\sigma_i^2u_i.
+\]
+
+By the spectral theorem,
+we may expand any unit
+vector $u$ as
+
+\[
+u=\sum_{i=1}^{m}c_i u_i,
+\qquad
+\sum_{i=1}^{m}c_i^2=1,
+\]
+
+where zero eigenvalues are
+included when necessary.
+
+Therefore,
+
+\[
+u^TAA^Tu
+=
+\sum_{i=1}^{m}
+\sigma_i^2c_i^2,
+\]
+
+where singular values beyond
+the rank are understood
+to be zero.
+
+Since
+
+\[
+\sigma_1^2\geq\sigma_i^2,
+\]
+
+we immediately obtain
+
+\[
+\begin{aligned}
+u^TAA^Tu
+&\leq
+\sigma_1^2
+\sum_{i=1}^{m}c_i^2\\
+&=\sigma_1^2.
+\end{aligned}
+\]
+
+Equality is attained by
+choosing $u=u_1$.
+
+Hence,
+
+\[
+\boxed{
+\max_{\|u\|_2=1}
+u^TAA^Tu
+=
+\sigma_1^2.
+}
+\]
+
+We have established an
+important result:
+
+\textit{A left singular vector
+corresponding to the largest
+singular value identifies
+a direction of maximum
+variance in the centered
+dataset.}
+
+The first principal direction
+is therefore not chosen
+arbitrarily.
+
+It solves a well-defined
+optimization problem.
+
+The same reasoning can be
+extended to selecting
+several mutually orthogonal
+directions.
+
+The first $k$ left singular
+vectors maximize the total
+variance captured among all
+choices of $k$ orthonormal
+directions.
+
+We will examine this
+higher-dimensional statement
+more carefully in the
+subsequent mathematical
+development.
+
+% -------------------------------------------------
+\subsection{The Connection with Reconstruction Error}
+% -------------------------------------------------
+
+There is another way to
+understand the same result.
+
+Suppose we choose any
+unit vector $u$ and
+reconstruct each observation
+from its scalar projection
+onto that direction.
+
+For the $j$th observation,
+
+\[
+\widehat{a}_j
+=
+u(u^Ta_j).
+\]
+
+The reconstruction error is
+
+\[
+e_j=a_j-\widehat{a}_j.
+\]
+
+Because this is an
+orthogonal projection,
+the error vector is
+perpendicular to the
+reconstructed vector.
+
+The Pythagorean theorem
+therefore gives
+
+\[
+\|a_j\|_2^2
+=
+\|\widehat{a}_j\|_2^2
++
+\|a_j-\widehat{a}_j\|_2^2.
+\]
+
+Since $\|u\|_2=1$,
+
+\[
+\|\widehat{a}_j\|_2^2
+=
+(u^Ta_j)^2.
+\]
+
+It follows that
+
+\[
+\|a_j-\widehat{a}_j\|_2^2
+=
+\|a_j\|_2^2-(u^Ta_j)^2.
+\]
+
+Summing over all observations
+and using the Frobenius norm,
+
+\[
+\boxed{
+\|A-uu^TA\|_F^2
+=
+\|A\|_F^2-u^TAA^Tu.
+}
+\]
+
+Here,
+
+\[
+\|A\|_F^2
+=
+\sum_{i,j}A_{ij}^2.
+\]
+
+The quantity $\|A\|_F^2$
+does not depend on $u$.
+
+Consequently, minimizing
+the reconstruction error
+is equivalent to maximizing
+the retained variance.
+
+Thus,
+
+\[
+\boxed{
+\begin{aligned}
+&\max_{\|u\|_2=1}
+u^TAA^Tu\\[2mm]
+&\qquad\Longleftrightarrow\\[2mm]
+&\min_{\|u\|_2=1}
+\|A-uu^TA\|_F^2.
+\end{aligned}
+}
+\]
+
+This equivalence reveals
+the geometric beauty
+underlying PCA.
+
+The direction that captures
+the greatest variance is
+also the direction that
+produces the smallest
+squared reconstruction error
+among all one-dimensional
+orthogonal projections.
+
+More generally, if
+$Q\in\mathbb{R}^{m\times k}$
+has orthonormal columns,
+then
+
+\[
+\boxed{
+\|A-QQ^TA\|_F^2
+=
+\|A\|_F^2-\|Q^TA\|_F^2.
+}
+\]
+
+Thus, maximizing the total
+variation retained in the
+$k$-dimensional subspace
+is equivalent to minimizing
+its squared reconstruction
+error.
+
+For PCA, we choose $Q=U_k$.
+
+% -------------------------------------------------
+\subsection{The Optimality Question}
+% -------------------------------------------------
+
+We have obtained the PCA
+reconstruction
+
+\[
+\widehat{A}=U_kU_k^TA.
+\]
+
+Using the singular value
+decomposition, this can
+also be written as
+
+\[
+\boxed{
+\widehat{A}
+=
+\sum_{i=1}^{k}
+\sigma_i u_i v_i^T.
+}
+\]
+
+Since the singular vectors
+are orthonormal, the
+discarded part is
+
+\[
+A-\widehat{A}
+=
+\sum_{i=k+1}^{r}
+\sigma_i u_i v_i^T.
+\]
+
+Consequently, its squared
+Frobenius norm is
+
+\[
+\boxed{
+\|A-\widehat{A}\|_F^2
+=
+\sum_{i=k+1}^{r}
+\sigma_i^2.
+}
+\]
+
+Similarly, when $k<r$,
+the spectral norm of the
+residual is
+
+\[
+\boxed{
+\|A-\widehat{A}\|_2
+=
+\sigma_{k+1}.
+}
+\]
+
+These formulas tell us
+exactly how much error
+is introduced by discarding
+the smaller singular values.
+
+But an important question
+still remains.
+
+We have argued that PCA
+selects an optimal
+$k$-dimensional orthogonal
+projection.
+
+What if we do not restrict
+ourselves to orthogonal
+projections?
+
+Suppose we allow any
+matrix $B$ of rank at most
+$k$ to approximate $A$.
+
+Could some other construction
+produce a smaller error?
+
+Remarkably, the answer is no.
+
+The Eckart--Young theorem
+establishes that the truncated
+SVD minimizes the approximation
+error among all matrices
+of rank at most $k$,
+both in the Frobenius
+and spectral norms.
+
+In particular,
+
+\[
+\boxed{
+\min_{\operatorname{rank}(B)\leq k}
+\|A-B\|_F^2
+=
+\sum_{i=k+1}^{r}\sigma_i^2,
+}
+\]
+
+and, for $k<r$,
+
+\[
+\boxed{
+\min_{\operatorname{rank}(B)\leq k}
+\|A-B\|_2
+=
+\sigma_{k+1}.
+}
+\]
+
+These are substantially
+stronger claims than
+the elementary projection
+argument alone establishes.
+
+We shall therefore devote
+the later sections of this
+note to developing and
+proving these results
+rigorously.
+
+For now, the essential
+observation is that PCA
+is not simply a procedure
+for discarding coordinates.
+
+It is a geometrically
+motivated optimization
+method whose optimality
+can be characterized
+precisely through the
+singular values of the
+data matrix.
+
+This is the mathematical
+connection that we seek
+to understand in the
+remainder of this note.
+
+\end{comment}
+
+
+% =================================================
+\section{Geometric Motivation for Principal
+Component Analysis}
+% =================================================
+
+
+The fundamental idea of PCA is that a collection of
+high-dimensional observations may exhibit most
+of its variation along only a few directions.
+If we can identify these directions, we may be
+able to describe the dataset using substantially
+fewer coordinates without losing too much of
+its original structure.
+
+But what exactly do we mean by a direction
+that captures the variation of a dataset?
+And how can we determine which direction
+is the most important?
+
+We begin with a simple geometric interpretation.
+
+% -------------------------------------------------
+\subsection{Representing a Dataset Geometrically}
+% -------------------------------------------------
+
+Suppose we have $n$ observations, each described
+by $m$ features. We represent the dataset by
+
+\[
+X =
+\begin{bmatrix}
+| & | & & |\\
+x_1 & x_2 & \cdots & x_n\\
+| & | & & |
+\end{bmatrix}
+\in \mathbb{R}^{m\times n},
+\]
+
+where each column $x_j\in\mathbb{R}^m$
+represents one observation, and each row
+corresponds to a particular feature.
+
+For example, if our observations are individuals,
+the rows might represent age, income, height,
+or years of education. Each individual is
+therefore represented by a point in an
+$m$-dimensional Euclidean space.
+
+When $m=2$, the observations form a collection
+of points in the plane. When $m=3$, they form
+a cloud of points in three-dimensional space.
+
+For larger $m$, direct visualization becomes
+difficult, but the underlying geometry
+remains unchanged.
+
+Now imagine that this cloud of points is
+not distributed uniformly in every direction.
+Instead, it may be elongated along some
+particular direction.
+
+Intuitively, that direction should contain
+more information about how the observations
+differ from one another than a direction
+along which the points are tightly clustered.
+
+This observation provides the initial
+motivation for PCA.
+
+The idea is to identify a new system of
+orthogonal coordinate axes that reflects
+the dominant directions of variation
+in the dataset.
+
+Rather than describing each observation
+using all the original features, we may
+then describe it using only a few
+coordinates along these new axes.
+
+But before proceeding, we must clarify
+what we actually mean by the variation
+of a dataset.
+
+% -------------------------------------------------
+\subsection{What Does Variance Mean Geometrically?}
+% -------------------------------------------------
+
+In elementary statistics, variance measures
+how widely observations are distributed
+around their mean.
+
+For a collection of scalar observations
+$t_1,t_2,\ldots,t_n$, the sample variance
+is defined by
+
+\[
+s^2=\frac{1}{n-1}
+\sum_{j=1}^{n}(t_j-\bar{t})^2,
+\]
+
+where
+
+\[
+\bar{t}=\frac{1}{n}
+\sum_{j=1}^{n}t_j.
+\]
+
+A large variance means that the observations
+are widely spread around their mean,
+whereas a small variance means that they
+are concentrated relatively close to it.
+
+This interpretation is straightforward
+when the observations are real numbers.
+
+But what happens when each observation
+is a vector in $\mathbb{R}^m$?
+
+In that case, we must first specify
+the direction along which the spread
+is to be measured.
+
+To understand this, imagine a two-dimensional
+dataset containing information about
+the income and expenditure of several
+individuals.
+
+Suppose individuals with higher income
+also tend to have higher expenditure.
+
+The corresponding data points may then
+form an elongated cloud approximately
+along a diagonal direction.
+
+If we project these observations onto
+that diagonal line, their projected
+coordinates may be widely spread.
+
+On the other hand, if we project the
+same observations onto a direction
+perpendicular to that line, their
+projected coordinates may lie much
+closer together.
+
+Thus, the variance of the projected
+observations depends on the direction
+along which we examine the data.
+
+This gives us a useful geometric
+interpretation:
+
+\textit{Variance along a direction
+measures how widely the observations
+are spread when viewed from that
+particular direction.}
+
+Let $u\in\mathbb{R}^m$ be an arbitrary
+unit vector, so that
+
+\[
+u^Tu=1.
+\]
+
+For each observation $x_j$, consider
+its scalar projection onto $u$:
+
+\[
+t_j=u^Tx_j.
+\]
+
+The mean of these projected coordinates
+is
+
+\[
+\bar{t}
+=
+u^T\bar{x},
+\]
+
+where
+
+\[
+\bar{x}=\frac{1}{n}
+\sum_{j=1}^{n}x_j.
+\]
+
+Therefore, the sample variance of the
+observations along the direction $u$ is
+
+\[
+\boxed{
+s_u^2=
+\frac{1}{n-1}
+\sum_{j=1}^{n}
+\left(u^T(x_j-\bar{x})\right)^2.
+}
+\]
+
+Notice something important.
+
+Although the original dataset may
+contain hundreds of features,
+we can measure its spread along
+any chosen direction by first
+projecting the observations onto
+that direction and then computing
+the ordinary variance of the
+resulting scalar coordinates.
+
+This leads us naturally to a
+mathematical question:
+
+\textit{Among all possible unit
+directions, which one produces
+the greatest variance?}
+
+PCA is designed to answer precisely
+this question.
+
+The first principal direction
+captures the maximum possible
+variance. Subsequent principal
+directions capture the largest
+remaining variance while being
+orthogonal to the previously
+selected directions.
+
+This is the essential geometric
+principle behind PCA.
+
+Of course, a direction with large
+variance is not necessarily
+important for every conceivable
+application. PCA uses variance
+as a measure of the dominant
+structure of a dataset.
+
+The mathematical problem is
+therefore not to preserve every
+possible notion of information,
+but to preserve as much
+\textit{variance} as possible
+using a prescribed number
+of orthogonal directions.
+
+
+
+
+
+
+% -------------------------------------------------
+\subsection{The Covariance Matrix}
+% -------------------------------------------------
+
+Having introduced the notion of variance along
+a particular direction, we now recall another
+important concept from elementary statistics:
+the covariance matrix.
+
+While variance measures the spread of a single
+variable, covariance measures how two variables
+vary together.
+
+For two variables $X_i$ and $X_j$, with
+observations $x_{i\ell}$ and $x_{j\ell}$,
+their sample covariance is defined by
+
+\[
+\operatorname{Cov}(X_i,X_j)
+=
+\frac{1}{n-1}
+\sum_{\ell=1}^{n}
+(x_{i\ell}-\bar{x}_i)
+(x_{j\ell}-\bar{x}_j).
+\]
+
+Notice that when $i=j$, covariance reduces
+to the ordinary sample variance:
+
+\[
+\operatorname{Cov}(X_i,X_i)
+=
+\operatorname{Var}(X_i).
+\]
+
+The covariance matrix collects all these
+quantities into a single symmetric matrix:
+
+\[
+C=
+\begin{bmatrix}
+\operatorname{Var}(X_1) &
+\cdots &
+\operatorname{Cov}(X_1,X_m)\\
+\vdots & \ddots & \vdots\\
+\operatorname{Cov}(X_m,X_1) &
+\cdots &
+\operatorname{Var}(X_m)
+\end{bmatrix}.
+\]
+
+Thus, the diagonal entries represent the
+variances of individual features, while
+the off-diagonal entries describe how
+different features vary together.
+
+Let us now see how this matrix arises
+naturally from matrix multiplication.
+
+
+
+\begin{comment}
+    
+
+
+\subsubsection*{A Simple $2\times 2$ Example}
+
+Suppose we have two features and two
+observations, represented by
+
+\[
+X=
+\begin{bmatrix}
+1 & 3\\
+2 & 4
+\end{bmatrix}.
+\]
+
+Following our convention, the columns
+represent observations and the rows
+represent features.
+
+The mean of each feature is
+
+\[
+\bar{x}_1=\frac{1+3}{2}=2,
+\qquad
+\bar{x}_2=\frac{2+4}{2}=3.
+\]
+
+Subtracting these means from the
+corresponding rows, we obtain the
+centered data matrix
+
+\[
+A=
+\begin{bmatrix}
+1-2 & 3-2\\
+2-3 & 4-3
+\end{bmatrix}
+=
+\begin{bmatrix}
+-1 & 1\\
+-1 & 1
+\end{bmatrix}.
+\]
+
+Now consider the matrix product
+
+\[
+AA^T=
+\begin{bmatrix}
+-1 & 1\\
+-1 & 1
+\end{bmatrix}
+\begin{bmatrix}
+-1 & -1\\
+1 & 1
+\end{bmatrix}.
+\]
+
+Performing the multiplication gives
+
+\[
+AA^T=
+\begin{bmatrix}
+2 & 2\\
+2 & 2
+\end{bmatrix}.
+\]
+
+What do these entries represent?
+
+The first diagonal entry is the sum
+of squared deviations of the first
+feature. The second diagonal entry
+has the same interpretation for the
+second feature.
+
+The off-diagonal entries are the sums
+of products of deviations of the two
+features from their respective means.
+
+These are precisely the quantities
+appearing in the definition of covariance.
+
+Since $n=2$, the sample covariance
+matrix is
+
+\[
+C=\frac{1}{n-1}AA^T
+=
+\begin{bmatrix}
+2 & 2\\
+2 & 2
+\end{bmatrix}.
+\]
+
+The same reasoning applies to any
+number of features and observations.
+
+In general, for a centered data matrix
+$A\in\mathbb{R}^{m\times n}$ with
+$n\geq 2$, the sample covariance
+matrix is
+
+\[
+\boxed{
+C=\frac{1}{n-1}AA^T.
+}
+\]
+
+Thus, the matrix $AA^T$, which we
+encountered earlier in our discussion
+of Singular Value Decomposition, is
+closely connected to the statistical
+variation of the dataset.
+
+More precisely, it is the covariance
+matrix multiplied by $n-1$.
+
+This connection will be particularly
+important in our development of PCA.
+
+Indeed, for any unit direction
+$u\in\mathbb{R}^m$, the variance of
+the projected observations can be
+written as
+
+\[
+\boxed{
+\operatorname{Var}(u^TA)
+=
+u^TCu
+=
+\frac{1}{n-1}u^TAA^Tu.
+}
+\]
+
+Consequently, finding directions
+of maximum variance is closely
+related to studying the eigenvectors
+and eigenvalues of the covariance
+matrix.
+
+As we shall see, this is precisely
+where Singular Value Decomposition
+enters the mathematical development
+of Principal Component Analysis.
+
+
+\end{comment}
+
+
+
+
+
+
+
+
+
+
+% -------------------------------------------------
+\subsubsection*{A Simple $2\times 2$ Example}
+% -------------------------------------------------
+
+Suppose we have two features and two
+observations, represented by the matrix
+
+\[
+X=
+\begin{bmatrix}
+x_{11} & x_{12}\\
+x_{21} & x_{22}
+\end{bmatrix}.
+\]
+
+Following our convention, the columns
+represent observations and the rows
+represent features. Thus, $x_{ij}$
+denotes the value of the $i$th feature
+in the $j$th observation.
+
+The mean of each feature is
+
+\[
+\bar{x}_1=\frac{x_{11}+x_{12}}{2},
+\qquad
+\bar{x}_2=\frac{x_{21}+x_{22}}{2}.
+\]
+
+Subtracting the mean from each
+corresponding row, we obtain
+the centered data matrix
+
+\[
+A=
+\begin{bmatrix}
+x_{11}-\bar{x}_1 & x_{12}-\bar{x}_1\\
+x_{21}-\bar{x}_2 & x_{22}-\bar{x}_2
+\end{bmatrix}.
+\]
+
+For convenience, let us introduce
+the notation
+
+\[
+a_{ij}=x_{ij}-\bar{x}_i.
+\]
+
+Then
+
+\[
+\boxed{
+A=
+\begin{bmatrix}
+a_{11} & a_{12}\\
+a_{21} & a_{22}
+\end{bmatrix}.
+}
+\]
+
+We will now calculate the covariance
+matrix directly from the statistical
+definitions, without using matrix
+multiplication.
+
+\subsubsection*{Computing the Covariance
+Matrix}
+
+Recall that the covariance matrix
+for two features has the form
+
+\[
+C=
+\begin{bmatrix}
+\operatorname{Var}(X_1) &
+\operatorname{Cov}(X_1,X_2)\\
+\operatorname{Cov}(X_2,X_1) &
+\operatorname{Var}(X_2)
+\end{bmatrix}.
+\]
+
+Let us calculate each entry separately.
+
+\textbf{First diagonal entry:}
+
+The sample variance of the first
+feature is
+
+\[
+\begin{aligned}
+C_{11}
+&=\operatorname{Var}(X_1)\\
+&=\frac{1}{2-1}
+\left[
+(x_{11}-\bar{x}_1)^2
++
+(x_{12}-\bar{x}_1)^2
+\right]\\
+&=a_{11}^2+a_{12}^2.
+\end{aligned}
+\]
+
+\textbf{Second diagonal entry:}
+
+Similarly, the sample variance
+of the second feature is
+
+\[
+\begin{aligned}
+C_{22}
+&=\operatorname{Var}(X_2)\\
+&=\frac{1}{2-1}
+\left[
+(x_{21}-\bar{x}_2)^2
++
+(x_{22}-\bar{x}_2)^2
+\right]\\
+&=a_{21}^2+a_{22}^2.
+\end{aligned}
+\]
+
+\textbf{First off-diagonal entry:}
+
+The sample covariance between
+the first and second features is
+
+\[
+\begin{aligned}
+C_{12}
+&=\operatorname{Cov}(X_1,X_2)\\
+&=\frac{1}{2-1}
+\Big[
+(x_{11}-\bar{x}_1)
+(x_{21}-\bar{x}_2)\\
+&\qquad\qquad+
+(x_{12}-\bar{x}_1)
+(x_{22}-\bar{x}_2)
+\Big]\\
+&=a_{11}a_{21}+a_{12}a_{22}.
+\end{aligned}
+\]
+
+\textbf{Second off-diagonal entry:}
+
+By the symmetry of covariance,
+
+\[
+\begin{aligned}
+C_{21}
+&=\operatorname{Cov}(X_2,X_1)\\
+&=a_{21}a_{11}+a_{22}a_{12}\\
+&=C_{12}.
+\end{aligned}
+\]
+
+Putting these four entries together,
+we obtain the covariance matrix
+
+\[
+\boxed{
+C=
+\begin{bmatrix}
+a_{11}^2+a_{12}^2 &
+a_{11}a_{21}+a_{12}a_{22}\\[2mm]
+a_{21}a_{11}+a_{22}a_{12} &
+a_{21}^2+a_{22}^2
+\end{bmatrix}.
+}
+\]
+
+So far, we have used nothing
+more than the elementary
+statistical definitions of
+variance and covariance.
+
+Now comes an interesting observation.
+
+% -------------------------------------------------
+\subsubsection*{The Same Calculation Through
+Matrix Multiplication}
+% -------------------------------------------------
+
+Recall that the centered
+data matrix is
+
+\[
+A=
+\begin{bmatrix}
+a_{11} & a_{12}\\
+a_{21} & a_{22}
+\end{bmatrix}.
+\]
+
+Consider the matrix product
+
+\[
+AA^T=
+\begin{bmatrix}
+a_{11} & a_{12}\\
+a_{21} & a_{22}
+\end{bmatrix}
+\begin{bmatrix}
+a_{11} & a_{21}\\
+a_{12} & a_{22}
+\end{bmatrix}.
+\]
+
+Performing the multiplication,
+we obtain
+
+\[
+\boxed{
+AA^T=
+\begin{bmatrix}
+a_{11}^2+a_{12}^2 &
+a_{11}a_{21}+a_{12}a_{22}\\[2mm]
+a_{21}a_{11}+a_{22}a_{12} &
+a_{21}^2+a_{22}^2
+\end{bmatrix}.
+}
+\]
+
+Compare this matrix with the
+covariance matrix we calculated
+earlier.
+
+They are exactly the same!
+
+In this particular example,
+the number of observations
+is $n=2$, so the sample
+covariance normalization
+factor is
+
+\[
+\frac{1}{n-1}=1.
+\]
+
+Hence,
+
+\[
+C=AA^T.
+\]
+
+But this equality without
+a normalization factor is
+specific to our example.
+
+For a general dataset containing
+$n$ observations, the sample
+covariance formula requires
+division by $n-1$.
+
+Thus, for a centered data
+matrix $A\in\mathbb{R}^{m\times n}$,
+with $n\geq 2$, we obtain
+
+\[
+\boxed{
+C=\frac{1}{n-1}AA^T.
+}
+\]
+
+To see this directly, the
+$(i,j)$ entry of $AA^T$ is
+
+\[
+(AA^T)_{ij}
+=
+\sum_{\ell=1}^{n}
+a_{i\ell}a_{j\ell}.
+\]
+
+Therefore,
+
+\[
+\begin{aligned}
+C_{ij}
+&=\frac{1}{n-1}(AA^T)_{ij}\\
+&=\frac{1}{n-1}
+\sum_{\ell=1}^{n}
+(x_{i\ell}-\bar{x}_i)
+(x_{j\ell}-\bar{x}_j).
+\end{aligned}
+\]
+
+This is precisely the
+definition of sample covariance
+between the $i$th and $j$th
+features.
+
+We have therefore established
+the covariance matrix formula
+directly from its elementary
+statistical definition.
+
+% -------------------------------------------------
+\subsubsection*{Connection with PCA}
+% -------------------------------------------------
+
+The matrix $AA^T$, which we
+encountered earlier in our
+discussion of Singular Value
+Decomposition, is therefore
+closely connected to the
+statistical variation of
+the dataset.
+
+More precisely, it is the
+covariance matrix multiplied
+by $n-1$.
+
+This connection is especially
+important for PCA.
+
+
+Let $u\in\mathbb{R}^m$ be a unit vector,
+and let the centered data matrix be
+
+\[
+A=
+\begin{bmatrix}
+a_1 & a_2 & \cdots & a_n
+\end{bmatrix}.
+\]
+
+The scalar projection of the $j$th
+observation onto the direction $u$ is
+
+\[
+z_j=u^Ta_j.
+\]
+
+Since the observations have been centered,
+the mean of the projected coordinates is
+
+\[
+\begin{aligned}
+\bar{z}
+&=\frac{1}{n}\sum_{j=1}^{n}z_j\\
+&=\frac{1}{n}\sum_{j=1}^{n}u^Ta_j\\
+&=u^T\left(\frac{1}{n}
+\sum_{j=1}^{n}a_j\right)\\
+&=0.
+\end{aligned}
+\]
+
+Therefore, by the definition of
+sample variance,
+
+\[
+\begin{aligned}
+\operatorname{Var}(u^TA)
+&=\frac{1}{n-1}
+\sum_{j=1}^{n}(z_j-\bar{z})^2\\[2mm]
+&=\frac{1}{n-1}
+\sum_{j=1}^{n}(u^Ta_j)^2\\[2mm]
+&=\frac{1}{n-1}
+\sum_{j=1}^{n}
+(u^Ta_j)(a_j^Tu)\\[2mm]
+&=\frac{1}{n-1}
+\sum_{j=1}^{n}
+u^T(a_ja_j^T)u\\[2mm]
+&=\frac{1}{n-1}
+u^T\left(
+\sum_{j=1}^{n}a_ja_j^T
+\right)u\\[2mm]
+&=\frac{1}{n-1}u^TAA^Tu\\[2mm]
+&=u^TCu,
+\end{aligned}
+\]
+
+where we have used the identity
+
+\[
+AA^T=\sum_{j=1}^{n}a_ja_j^T
+\]
+
+and the covariance matrix formula
+
+\[
+C=\frac{1}{n-1}AA^T.
+\]
+
+Hence, we have established
+
+\[
+\boxed{
+\operatorname{Var}(u^TA)
+=
+u^TCu
+=
+\frac{1}{n-1}u^TAA^Tu.
+}
+\]
+
+This is a fundamental relationship
+in Principal Component Analysis.
+
+It tells us that the variance of
+the observations along an arbitrary
+unit direction $u$ can be expressed
+as a quadratic form involving
+the covariance matrix.
+
+Consequently, finding the direction
+of maximum variance is equivalent
+to solving the optimization problem
+
+\[
+\boxed{
+\max_{u^Tu=1}u^TCu.
+}
+\]
+
+As we shall establish shortly,
+the solution is an eigenvector
+of $C$ corresponding to its
+largest eigenvalue.
+
+
+
+
+Thus, we can measure how much
+the data varies along any
+particular direction using
+a quadratic form involving
+the covariance matrix.
+
+
+
+As we shall see, this leads
+naturally to the eigenvectors
+of the covariance matrix,
+or equivalently, the left
+singular vectors of the
+centered data matrix.
+
+This is precisely where
+the statistical concept
+of variance meets the
+linear algebra of Singular
+Value Decomposition.
+
+
+% -------------------------------------------------
+\subsection{The Principal Component Analysis
+Procedure}
+% -------------------------------------------------
+
+As we have developed the necessary mathematical tools, the basic PCA procedure can now be summarized
+in a few relatively simple steps.
+
+Although different textbooks may arrange
+the data matrix differently, we will
+consistently assume that features occupy
+the rows and observations occupy the
+columns.
+
+\subsubsection*{Step 1: Center the Data}
+
+We begin by computing the mean
+observation vector
+
+\[
+\bar{x}=
+\frac{1}{n}\sum_{j=1}^{n}x_j.
+\]
+
+Each observation is then centered
+by subtracting this mean:
+
+\[
+a_j=x_j-\bar{x}.
+\]
+
+The resulting centered data matrix is
+
+\[
+\boxed{
+A=X-\bar{x}\mathbf{1}_n^T,
+}
+\]
+
+where $\mathbf{1}_n$ is the vector
+of $n$ ones.
+
+Notice that
+
+\[
+\sum_{j=1}^{n}a_j=0.
+\]
+
+Consequently, the center of the
+data cloud has been translated
+to the origin.
+
+Why do we perform this operation?
+
+Recall that variance measures
+the spread of observations
+\textit{around their mean}.
+
+If we wish to identify directions
+of maximum variance, we should
+therefore examine the deviations
+from the mean rather than the
+absolute positions of the
+observations.
+
+Mean centering allows us to
+measure this variation directly.
+
+Indeed, for any unit vector $u$,
+the variance along $u$ becomes
+
+\[
+s_u^2=
+\frac{1}{n-1}
+\sum_{j=1}^{n}(u^Ta_j)^2.
+\]
+
+We have already observed that this
+expression has a particularly
+convenient matrix representation.
+
+From now on, unless stated
+otherwise, $A$ denotes the
+centered data matrix.
+
+\subsubsection*{Step 2: Compute the SVD}
+
+We compute the Singular Value
+Decomposition of $A$:
+
+\[
+\boxed{
+A=U\Sigma V^T.
+}
+\]
+
+Recall from Section 3 that
+the columns of $U$ are
+the left singular vectors,
+while the columns of $V$
+are the right singular vectors.
+
+The positive singular values
+are arranged in decreasing order:
+
+\[
+\sigma_1\geq\sigma_2
+\geq\cdots\geq\sigma_r>0,
+\]
+
+where $r=\operatorname{rank}(A)$.
+
+Since $A$ is an $m\times n$
+matrix, its left singular
+vectors belong to $\mathbb{R}^m$,
+the original feature space.
+
+Thus, these vectors provide
+candidate directions along
+which we may describe the
+observations.
+
+But why should SVD help us
+identify directions of
+maximum variance?
+
+To appreciate this connection,
+recall the sample covariance
+matrix of the centered data:
+
+\[
+\boxed{
+C=\frac{1}{n-1}AA^T,
+}
+\]
+
+where we assume $n\geq 2$.
+
+The covariance matrix describes
+how the original features vary
+together.
+
+Its diagonal entries are
+the sample variances of the
+individual features, while
+the off-diagonal entries
+measure their pairwise
+covariances.
+
+More importantly, for any
+unit direction $u$,
+
+\[
+\boxed{
+s_u^2=u^TCu.
+}
+\]
+
+We have already derived this identity
+explicitly in the previous subsection.
+
+Now recall from SVD that
+
+\[
+AA^T
+=
+U\Sigma\Sigma^TU^T.
+\]
+
+Consequently,
+
+\[
+C=
+\frac{1}{n-1}
+U\Sigma\Sigma^TU^T.
+\]
+
+Thus, the left singular vectors
+of $A$ are eigenvectors of
+the covariance matrix $C$,
+with corresponding eigenvalues
+
+\[
+\boxed{
+\lambda_i=
+\frac{\sigma_i^2}{n-1}.
+}
+\]
+
+This is the first important
+connection between SVD and
+variance.
+
+The squared singular values,
+after division by $n-1$,
+are precisely the variances
+associated with the corresponding
+principal directions.
+
+Therefore, larger singular
+values correspond to directions
+along which the projected
+observations exhibit greater
+variance.
+
+We will establish this
+conclusion rigorously below.
+
+\subsubsection*{Step 3: Select the Principal
+Directions}
+
+Suppose we wish to represent
+the original $m$-dimensional
+observations using only
+$k$ coordinates, where
+
+\[
+1\leq k\leq r.
+\]
+
+We retain the first $k$
+columns of $U$:
+
+\[
+\boxed{
+U_k=
+\begin{bmatrix}
+u_1 & u_2 & \cdots & u_k
+\end{bmatrix}
+\in\mathbb{R}^{m\times k}.
+}
+\]
+
+These vectors form an
+orthonormal basis for a
+$k$-dimensional subspace
+of the original feature space.
+
+We call this the
+\textit{principal subspace}.
+
+Why do we retain the first
+$k$ vectors rather than
+some other $k$ vectors?
+
+Because the singular values
+are arranged in decreasing order,
+the selected vectors correspond
+to the largest variances
+
+\[
+\frac{\sigma_1^2}{n-1},
+\ldots,
+\frac{\sigma_k^2}{n-1}.
+\]
+
+Thus, PCA retains those
+orthogonal directions along
+which the observations exhibit
+the greatest total variation.
+
+
+
+
+\begin{comment}
+The total sample variance
+across all original features is
+
+\[
+\operatorname{tr}(C)
+=
+\frac{1}{n-1}\|A\|_F^2
+=
+\frac{1}{n-1}
+\sum_{i=1}^{r}\sigma_i^2.
+\]
+
+\end{comment}
+
+
+The total sample variance
+across all original features is
+
+\[
+\begin{aligned}
+\operatorname{tr}(C)
+&=\operatorname{tr}
+\left(\frac{1}{n-1}AA^T\right)\\[2mm]
+&=\frac{1}{n-1}\operatorname{tr}(AA^T)\\[2mm]
+&=\frac{1}{n-1}
+\operatorname{tr}
+\left(U\Sigma V^T V\Sigma^TU^T\right)\\[2mm]
+&=\frac{1}{n-1}
+\operatorname{tr}
+\left(U\Sigma\Sigma^TU^T\right)\\[2mm]
+&=\frac{1}{n-1}
+\operatorname{tr}
+\left(\Sigma\Sigma^TU^TU\right)\\[2mm]
+&=\frac{1}{n-1}
+\operatorname{tr}\left(\Sigma\Sigma^T\right)\\[2mm]
+&=\frac{1}{n-1}
+\sum_{i=1}^{r}\sigma_i^2\\[2mm]
+&=\frac{1}{n-1}\|A\|_F^2.
+\end{aligned}
+\]
+
+Here we have used the orthogonality
+of $U$ and $V$, together with the
+cyclic property of the trace,
+
+\[
+\operatorname{tr}(BC)
+=
+\operatorname{tr}(CB),
+\]
+
+whenever both products are defined.
+
+We have also used the identity
+
+\[
+\|A\|_F^2
+=
+\operatorname{tr}(AA^T)
+=
+\sum_{i=1}^{r}\sigma_i^2.
+\]
+
+Consequently,
+
+\[
+\boxed{
+\operatorname{tr}(C)
+=
+\frac{1}{n-1}\|A\|_F^2
+=
+\frac{1}{n-1}
+\sum_{i=1}^{r}\sigma_i^2.
+}
+\]
+
+
+For a nonzero centered dataset,
+the proportion of this variance
+retained by the first $k$
+principal directions is
+
+\[
+\boxed{
+\mathrm{EVR}_k
+=
+\frac{\displaystyle
+\sum_{i=1}^{k}\sigma_i^2}
+{\displaystyle
+\sum_{i=1}^{r}\sigma_i^2}.
+}
+\]
+
+This quantity is called the
+\textit{cumulative explained
+variance ratio}.
+
+It allows us to measure
+how much of the original
+variation is retained
+after dimensionality
+reduction.
+
+Notice that $U_k$ contains
+directions, not transformed
+observations.
+
+To obtain the new coordinates
+of our observations, one
+additional operation is required.
+
+\subsubsection*{Step 4: Project the Data
+onto the Principal Directions}
+
+We compute
+
+\[
+\boxed{
+Z=U_k^TA.
+}
+\]
+
+Let us examine the dimensions:
+
+\[
+\underbrace{U_k^T}_{k\times m}
+\underbrace{A}_{m\times n}
+=
+\underbrace{Z}_{k\times n}.
+\]
+
+The $j$th column of $Z$ is
+
+\[
+z_j=U_k^Ta_j.
+\]
+
+In particular,
+
+\[
+z_j=
+\begin{bmatrix}
+u_1^Ta_j\\
+u_2^Ta_j\\
+\vdots\\
+u_k^Ta_j
+\end{bmatrix}.
+\]
+
+Thus, each entry measures
+how much the observation
+extends along a particular
+principal direction.
+
+The original observation
+$a_j\in\mathbb{R}^m$
+has now been represented
+by a new vector
+
+\[
+z_j\in\mathbb{R}^k.
+\]
+
+This is the actual
+dimensionality reduction.
+
+The matrix $Z$ is commonly
+called the matrix of
+\textit{principal component scores}.
+
+An interesting observation
+follows directly from SVD.
+Since
+
+\[
+A=U\Sigma V^T,
+\]
+
+and the columns of $U$
+are orthonormal,
+
+\[
+\boxed{
+Z=U_k^TA=\Sigma_kV_k^T,
+}
+\]
+
+where $\Sigma_k$ is the
+$k\times k$ diagonal matrix
+of the retained singular values,
+and $V_k$ contains the corresponding
+right singular vectors.
+
+Therefore, the principal
+component scores are precisely
+the corresponding right
+singular-vector coordinates
+scaled by the singular values.
+
+Now let us return once more
+to the concept of variance.
+
+The $i$th row of $Z$ contains
+the projected coordinates of
+all observations along
+the direction $u_i$.
+
+Since the data is centered,
+the sample variance of
+these coordinates is
+
+\[
+\operatorname{Var}(\mathrm{PC}_i)
+=
+\frac{1}{n-1}
+\|u_i^TA\|_2^2.
+\]
+
+But
+
+\[
+u_i^TA=\sigma_i v_i^T.
+\]
+
+Since $\|v_i\|_2=1$,
+
+\[
+\boxed{
+\operatorname{Var}(\mathrm{PC}_i)
+=
+\frac{\sigma_i^2}{n-1}.
+}
+\]
+
+Thus, the singular values
+tell us exactly how much
+variance is captured
+by each principal component.
+
+There is another important
+property of the transformed data.
+
+Since
+
+\[
+Z=\Sigma_kV_k^T,
+\]
+
+we obtain
+
+\[
+\frac{1}{n-1}ZZ^T
+=
+\frac{1}{n-1}\Sigma_k^2.
+\]
+
+Hence, the covariance matrix
+of the principal component
+scores is diagonal:
+
+\[
+\boxed{
+\operatorname{Cov}(Z)
+=
+\frac{1}{n-1}
+\begin{bmatrix}
+\sigma_1^2 & & 0\\
+&\ddots&\\
+0&&\sigma_k^2
+\end{bmatrix}.
+}
+\]
+
+Consequently, the principal
+components are mutually
+uncorrelated.
+
+This gives another interpretation
+of PCA: it constructs new
+uncorrelated coordinates,
+ordered according to the
+amount of variance they capture.
+
+\subsubsection*{Step 5: Reconstruct the
+Original Observations}
+
+Suppose we now wish to
+return from the reduced
+$k$-dimensional representation
+to the original feature space.
+
+We compute
+
+\[
+\boxed{
+\widehat{A}=U_kZ.
+}
+\]
+
+Substituting $Z=U_k^TA$,
+
+\[
+\boxed{
+\widehat{A}=U_kU_k^TA.
+}
+\]
+
+Notice the dimensions:
+
+\[
+\underbrace{U_k}_{m\times k}
+\underbrace{Z}_{k\times n}
+=
+\underbrace{\widehat{A}}_{m\times n}.
+\]
+
+Thus, the reconstructed
+data matrix has the same
+dimensions as the original
+centered data matrix.
+
+However, in general,
+
+\[
+\widehat{A}\neq A.
+\]
+
+The reconstructed observations
+retain only the components
+lying in the selected principal
+subspace.
+
+The components orthogonal to
+that subspace are discarded.
+
+If we wish to reconstruct
+the observations on their
+original, uncentered scale,
+we must also restore the mean:
+
+\[
+\boxed{
+\widehat{X}
+=
+\widehat{A}
++
+\bar{x}\mathbf{1}_n^T.
+}
+\]
+
+This completes the basic
+PCA procedure.
+
+
+    
+
+% -------------------------------------------------
+\subsection{What Have We Actually Accomplished?}
+% -------------------------------------------------
+
+It is worth reflecting on what
+these operations have achieved.
+
+Originally, every observation
+was represented by $m$
+features having familiar
+interpretations, such as age,
+income, and education.
+
+After the transformation
+
+\[
+Z=U_k^TA,
+\]
+
+the observations are described
+using only $k$ coordinates.
+
+However, the new coordinates
+no longer represent individual
+features in the original sense.
+
+For example, a principal
+component might be a linear
+combination of age, income,
+and education, rather than
+any one of these quantities
+individually.
+
+Thus, dimensionality reduction
+comes with a trade-off:
+the new coordinates may be
+mathematically more economical,
+but their interpretation
+is often less immediate.
+
+Nevertheless, the transformation
+is not mysterious.
+
+The coefficients defining
+each new coordinate are
+stored explicitly in the
+columns of $U_k$.
+
+When we reconstruct the
+observations through
+
+\[
+\widehat{A}=U_kZ,
+\]
+
+we return to the original
+feature coordinates.
+
+The rows of $\widehat{A}$
+can therefore again be
+interpreted as age, income,
+education, and so forth.
+
+Their numerical values,
+however, are generally
+different from those
+in the original matrix.
+
+Geometrically, each observation
+has been replaced by its
+orthogonal projection onto
+the principal subspace.
+
+This process may suppress
+small-scale fluctuations
+and can be useful for
+denoising when the discarded
+directions predominantly
+contain noise.
+
+However, PCA does not
+automatically distinguish
+noise from meaningful
+variation. Information
+contained in discarded
+directions is lost,
+whether it represents
+noise or an important
+feature of the dataset.
+
+We should also remember
+that variance depends
+on the scale of the features.
+
+For example, features measured
+in dollars may numerically
+dominate features measured
+in years. Therefore, depending
+on the application, it may
+be appropriate to standardize
+the features before applying PCA.
+
+Such standardization changes
+the mathematical problem,
+since PCA then operates on
+the scaled data rather than
+the original measurements.
+
+
+% -------------------------------------------------
+\subsection{The Connection with Reconstruction Error}
+% -------------------------------------------------
+
+There is another way to
+understand the same result.
+
+Suppose we choose any
+unit vector $u$ and
+reconstruct each observation
+from its scalar projection
+onto that direction.
+
+For the $j$th observation,
+
+\[
+\widehat{a}_j
+=
+u(u^Ta_j).
+\]
+
+The reconstruction error is
+
+\[
+e_j=a_j-\widehat{a}_j.
+\]
+
+Because this is an
+orthogonal projection,
+the error vector is
+perpendicular to the
+reconstructed vector.
+
+The Pythagorean theorem
+therefore gives
+
+\[
+\|a_j\|_2^2
+=
+\|\widehat{a}_j\|_2^2
++
+\|a_j-\widehat{a}_j\|_2^2.
+\]
+
+Since $\|u\|_2=1$,
+
+\[
+\|\widehat{a}_j\|_2^2
+=
+(u^Ta_j)^2.
+\]
+
+It follows that
+
+\[
+\|a_j-\widehat{a}_j\|_2^2
+=
+\|a_j\|_2^2-(u^Ta_j)^2.
+\]
+
+Summing over all observations
+and using the Frobenius norm,
+
+\[
+\boxed{
+\|A-uu^TA\|_F^2
+=
+\|A\|_F^2-u^TAA^Tu.
+}
+\]
+
+Here,
+
+\[
+\|A\|_F^2
+=
+\sum_{i,j}A_{ij}^2.
+\]
+
+The quantity $\|A\|_F^2$
+does not depend on $u$.
+
+Consequently, minimizing
+the reconstruction error
+is equivalent to maximizing
+the retained variance.
+
+Thus,
+
+\[
+\boxed{
+\begin{aligned}
+&\max_{\|u\|_2=1}
+u^TAA^Tu\\[2mm]
+&\qquad\Longleftrightarrow\\[2mm]
+&\min_{\|u\|_2=1}
+\|A-uu^TA\|_F^2.
+\end{aligned}
+}
+\]
+
+This equivalence reveals
+the geometric beauty
+underlying PCA.
+
+The direction that captures
+the greatest variance is
+also the direction that
+produces the smallest
+squared reconstruction error
+among all one-dimensional
+orthogonal projections.
+
+More generally, if
+$Q\in\mathbb{R}^{m\times k}$
+has orthonormal columns,
+then
+
+\[
+\boxed{
+\|A-QQ^TA\|_F^2
+=
+\|A\|_F^2-\|Q^TA\|_F^2.
+}
+\]
+
+Thus, maximizing the total
+variation retained in the
+$k$-dimensional subspace
+is equivalent to minimizing
+its squared reconstruction
+error.
+
+For PCA, we choose $Q=U_k$.
+
+% -------------------------------------------------
+\subsection{The Optimality Question}
+% -------------------------------------------------
+
+We have obtained the PCA
+reconstruction
+
+\[
+\widehat{A}=U_kU_k^TA.
+\]
+
+Using the singular value
+decomposition, this can
+also be written as
+
+\[
+\boxed{
+\widehat{A}
+=
+\sum_{i=1}^{k}
+\sigma_i u_i v_i^T.
+}
+\]
+
+Since the singular vectors
+are orthonormal, the
+discarded part is
+
+\[
+A-\widehat{A}
+=
+\sum_{i=k+1}^{r}
+\sigma_i u_i v_i^T.
+\]
+
+Consequently, its squared
+Frobenius norm is
+
+\[
+\boxed{
+\|A-\widehat{A}\|_F^2
+=
+\sum_{i=k+1}^{r}
+\sigma_i^2.
+}
+\]
+
+Similarly, when $k<r$,
+the spectral norm of the
+residual is
+
+\[
+\boxed{
+\|A-\widehat{A}\|_2
+=
+\sigma_{k+1}.
+}
+\]
+
+These formulas tell us
+exactly how much error
+is introduced by discarding
+the smaller singular values.
+
+But an important question
+still remains.
+
+We have shown that PCA
+selects an optimal
+$k$-dimensional orthogonal
+projection under the squared
+Frobenius reconstruction error.
+
+What if we do not restrict
+ourselves to orthogonal
+projections?
+
+Suppose we allow any
+matrix $B$ of rank at most
+$k$ to approximate $A$.
+
+Could some other construction
+produce a smaller error?
+
+Remarkably, the answer is no.
+
+The Eckart--Young theorem
+establishes that the truncated
+SVD minimizes the approximation
+error among all matrices
+of rank at most $k$,
+both in the Frobenius
+and spectral norms.
+
+In particular,
+
+\[
+\boxed{
+\min_{\operatorname{rank}(B)\leq k}
+\|A-B\|_F^2
+=
+\sum_{i=k+1}^{r}\sigma_i^2,
+}
+\]
+
+and, for $k<r$,
+
+\[
+\boxed{
+\min_{\operatorname{rank}(B)\leq k}
+\|A-B\|_2
+=
+\sigma_{k+1}.
+}
+\]
+
+These are substantially
+stronger claims than
+the elementary projection
+argument alone establishes.
+
+We shall therefore devote
+the later sections of this
+note to developing and
+proving these results
+rigorously.
+
+For now, the essential
+observation is that PCA
+is not simply a procedure
+for discarding coordinates.
+
+It is a geometrically
+motivated optimization
+method whose optimality
+can be characterized
+precisely through the
+singular values of the
+data matrix.
+
+This is the mathematical
+connection that we seek
+to understand in the
+remainder of this note.
+
+
+% =================================================
+\section{Mathematical Justification of Optimal
+Low-Rank Approximation: The Eckart--Young Theorem}
+% =================================================
+
+In the preceding section, we saw that PCA
+selects a low-dimensional subspace and
+reconstructs the centered data through
+an orthogonal projection. We also found
+that the squared reconstruction error is
+determined by the singular values that
+have been discarded.
+
+However, there is an important distinction
+between calculating the error of a particular
+approximation and proving that no other
+approximation of same rank can do better.
+
+So far, we have focused on approximations
+arising from orthogonal projections. What
+if we consider every possible matrix of
+rank at most $k$, without requiring it
+to arise from a projection?
+
+The Eckart--Young theorem answers this
+stronger question. We will first state
+the result and then prove it for two
+important matrix norms.
+
+% -------------------------------------------------
+\subsection{The Approximation Problem and Matrix Norms}
+% -------------------------------------------------
+
+Let $A\in\mathbb{R}^{m\times n}$ be any
+real matrix of rank $r$, with singular
+value decomposition
+
+\[
+A=\sum_{i=1}^{r}\sigma_i u_i v_i^T,
+\qquad
+\sigma_1\geq\cdots\geq\sigma_r>0.
+\]
+
+For $0\leq k<r$, define the truncated
+singular value decomposition by
+
+\[
+\boxed{
+A_k=\sum_{i=1}^{k}\sigma_i u_i v_i^T,
+}
+\]
+
+where the empty sum for $k=0$ is understood
+to be the zero matrix. Because the singular
+vectors are orthonormal, $A_k$ has rank
+at most $k$ (in fact, rank $k$ when $k>0$).
+
+Our question is whether there exists
+some other matrix $B$ satisfying
+
+\[
+\operatorname{rank}(B)\leq k
+\]
+
+that approximates $A$ more accurately.
+Of course, to make the word ``accurately''
+mathematically meaningful, we must first
+specify how approximation error is measured.
+
+\textbf{The Frobenius norm.}
+
+For $M=(m_{ij})$, define
+
+\[
+\boxed{
+\|M\|_F
+=\left(\sum_{i,j}m_{ij}^{2}\right)^{1/2}.
+}
+\]
+
+This measures the total entrywise error.
+In particular, $\|A-B\|_F^2$ is the sum
+of the squared differences between all
+corresponding entries of $A$ and $B$.
+
+\textbf{The spectral norm.}
+
+The matrix spectral norm, also called
+the induced Euclidean operator norm, is
+
+\[
+\boxed{
+\|M\|_2
+=\max_{\|x\|_2=1}\|Mx\|_2.
+}
+\]
+
+It measures the greatest length that
+$M$ can produce when acting on a unit
+vector. For an approximation error
+$M=A-B$, it measures the largest
+possible directional error.
+
+Thus, these norms ask somewhat different
+questions: the Frobenius norm measures
+the total squared error across the matrix,
+whereas the spectral norm measures the
+worst error over all unit input directions.
+
+% -------------------------------------------------
+\subsection{Statement of the Eckart--Young Theorem}
+% -------------------------------------------------
+
+\begin{theorem}[Eckart--Young--Mirsky]
+
+Let $A\in\mathbb{R}^{m\times n}$ have rank
+$r$ and positive singular values
+$\sigma_1\geq\cdots\geq\sigma_r>0$.
+For an integer $0\leq k<r$, define
+
+\[
+A_k=\sum_{i=1}^{k}\sigma_i u_i v_i^T.
+\]
+
+Then, among all matrices $B$ of rank
+at most $k$, the truncated SVD $A_k$
+minimizes both the Frobenius norm
+and the spectral norm of the error.
+More precisely,
+
+\[
+\boxed{
+\min_{\operatorname{rank}(B)\leq k}
+\|A-B\|_F^2
+=\sum_{i=k+1}^{r}\sigma_i^2,
+}
+\]
+
+and
+
+\[
+\boxed{
+\min_{\operatorname{rank}(B)\leq k}
+\|A-B\|_2=\sigma_{k+1}.
+}
+\]
+
+Both minima are attained by $B=A_k$.
+
+\end{theorem}
+
+The key phrase is \textit{among all
+matrices of rank at most $k$}.
+
+The theorem does not assume that $B$
+is formed by projection, nor does it
+require that $B$ share the singular
+vectors of $A$.
+
+To establish the theorem, we must show
+two things for each norm: every admissible
+$B$ has error at least as large as the
+claimed bound, and the truncated SVD
+actually attains that bound.
+
+% -------------------------------------------------
+\subsection{Proof Under the Frobenius Norm}
+% -------------------------------------------------
+
+\begin{proof}
+
+The case $k=0$ is immediate, since the
+only matrix of rank zero is $B=0$.
+We therefore assume $1\leq k<r$.
+
+\textbf{Step 1: Begin with an arbitrary
+rank-$k$ approximation.}
+
+Let $B\in\mathbb{R}^{m\times n}$ be
+\emph{any} matrix with
+
+\[
+\operatorname{rank}(B)\leq k.
+\]
+
+Its column space has dimension at
+most $k$. Since $k<m$, we can choose
+an orthonormal matrix
+
+\[
+Q\in\mathbb{R}^{m\times k},
+\qquad Q^TQ=I_k,
+\]
+
+such that the column space of $B$
+is contained in $\operatorname{Col}(Q)$.
+
+Set
+
+\[
+P=QQ^T.
+\]
+
+Then $P$ is the orthogonal projector
+onto $\operatorname{Col}(Q)$, and
+because every column of $B$ belongs
+to this subspace,
+
+\[
+\boxed{PB=B.}
+\]
+
+\textbf{Step 2: Separate the approximation
+error into orthogonal parts.}
+
+Write
+
+\[
+\begin{aligned}
+A-B
+&=(A-PA)+(PA-B)\\
+&=(I-P)A+(PA-B).
+\end{aligned}
+\]
+
+Every column of $(I-P)A$ is
+orthogonal to $\operatorname{Col}(Q)$,
+whereas every column of $PA-B$
+lies inside that subspace.
+
+Consequently, these two matrices
+are orthogonal in the Frobenius
+inner product, and the Pythagorean
+theorem gives
+
+\[
+\boxed{
+\|A-B\|_F^2
+=\|(I-P)A\|_F^2
++\|PA-B\|_F^2.
+}
+\]
+
+In particular,
+
+\[
+\boxed{
+\|A-B\|_F^2\geq\|(I-P)A\|_F^2.
+}
+\]
+
+Thus, no matrix $B$ whose columns
+lie in this subspace can approximate
+$A$ more accurately than the
+orthogonal projection $PA$.
+
+\textbf{Step 3: Bound the variance that
+an arbitrary $k$-dimensional subspace
+can retain.}
+
+Using the same orthogonal decomposition,
+
+\[
+\begin{aligned}
+\|(I-P)A\|_F^2
+&=\|A\|_F^2-\|PA\|_F^2\\
+&=\|A\|_F^2-\|Q^TA\|_F^2.
+\end{aligned}
+\]
+
+We now show that
+
+\[
+\boxed{
+\|Q^TA\|_F^2\leq
+\sum_{i=1}^{k}\sigma_i^2.
+}
+\]
+
+Recall from SVD that
+
+\[
+AA^T=\sum_{i=1}^{r}\sigma_i^2u_i u_i^T.
+\]
+
+Therefore,
+
+\[
+\begin{aligned}
+\|Q^TA\|_F^2
+&=\operatorname{tr}(Q^TAA^TQ)\\
+&=\sum_{i=1}^{r}\sigma_i^2
+\operatorname{tr}(Q^Tu_i u_i^TQ)\\
+&=\sum_{i=1}^{r}\sigma_i^2\|Q^Tu_i\|_2^2.
+\end{aligned}
+\]
+
+Put $p_i=\|Q^Tu_i\|_2^2$ and extend
+the singular values by $\sigma_i=0$
+for $r<i\leq m$. Since $Q$ has
+orthonormal columns,
+
+\[
+0\leq p_i\leq 1,
+\qquad
+\sum_{i=1}^{m}p_i=k.
+\]
+
+The last identity follows from
+
+\[
+\begin{aligned}
+\sum_{i=1}^{m}p_i
+&=\operatorname{tr}\left(
+Q^T\left(\sum_{i=1}^{m}u_i u_i^T\right)Q
+\right)\\
+&=\operatorname{tr}(Q^TQ)=k.
+\end{aligned}
+\]
+
+
+
+
+We now wish to establish the inequality
+
+\[
+\sum_{i=1}^{m}\sigma_i^2p_i
+\leq
+\sum_{i=1}^{k}\sigma_i^2.
+\]
+
+
+
+Let us divide the sum into two parts:
+
+\[
+\begin{aligned}
+\sum_{i=1}^{m}\sigma_i^2p_i
+&=
+\sum_{i=1}^{k}\sigma_i^2p_i
++
+\sum_{i=k+1}^{m}\sigma_i^2p_i.
+\end{aligned}
+\]
+
+Since $\sigma_i^2\leq\sigma_k^2$
+whenever $i>k$, and $p_i\geq 0$,
+we have
+
+\[
+\sum_{i=k+1}^{m}\sigma_i^2p_i
+\leq
+\sigma_k^2\sum_{i=k+1}^{m}p_i.
+\]
+
+Consequently,
+
+\[
+\begin{aligned}
+\sum_{i=1}^{m}\sigma_i^2p_i
+&\leq
+\sum_{i=1}^{k}\sigma_i^2p_i
++
+\sigma_k^2\sum_{i=k+1}^{m}p_i.
+\end{aligned}
+\]
+
+Now recall that
+
+\[
+\sum_{i=1}^{m}p_i=k.
+\]
+
+Therefore,
+
+\[
+\begin{aligned}
+\sum_{i=k+1}^{m}p_i
+&=k-\sum_{i=1}^{k}p_i\\
+&=\sum_{i=1}^{k}(1-p_i).
+\end{aligned}
+\]
+
+Substituting this expression
+into the previous inequality gives
+
+\[
+\begin{aligned}
+\sum_{i=1}^{m}\sigma_i^2p_i
+&\leq
+\sum_{i=1}^{k}\sigma_i^2p_i
++
+\sigma_k^2\sum_{i=1}^{k}(1-p_i)\\
+&=
+\sum_{i=1}^{k}
+\left[
+\sigma_i^2p_i+
+\sigma_k^2(1-p_i)
+\right].
+\end{aligned}
+\]
+
+Now here comes the crucial observation.
+
+For every $1\leq i\leq k$,
+
+\[
+\sigma_i^2\geq\sigma_k^2.
+\]
+
+Also, since $0\leq p_i\leq 1$,
+
+\[
+1-p_i\geq 0.
+\]
+
+Hence,
+
+\[
+\sigma_k^2(1-p_i)
+\leq
+\sigma_i^2(1-p_i).
+\]
+
+Adding $\sigma_i^2p_i$
+to both sides, we obtain
+
+\[
+\begin{aligned}
+\sigma_i^2p_i+\sigma_k^2(1-p_i)
+&\leq
+\sigma_i^2p_i+\sigma_i^2(1-p_i)\\
+&=
+\sigma_i^2[p_i+(1-p_i)]\\
+&=\sigma_i^2.
+\end{aligned}
+\]
+
+Summing this inequality
+from $i=1$ to $k$,
+we finally obtain
+
+\[
+\boxed{
+\sum_{i=1}^{m}\sigma_i^2p_i
+\leq
+\sum_{i=1}^{k}\sigma_i^2.
+}
+\]
+
+Equality is attained by choosing
+$Q=U_k$, for which
+
+\[
+p_i=
+\begin{cases}
+1, & 1\leq i\leq k,\\
+0, & i>k.
+\end{cases}
+\]
+
+Thus, the first $k$ left singular
+vectors maximize the quantity
+
+\[
+\|Q^TA\|_F^2
+=
+\sum_{i=1}^{m}\sigma_i^2p_i
+\]
+
+over all matrices $Q$ with
+orthonormal columns.
+
+This proves the claimed bound on
+$\|Q^TA\|_F^2$.
+
+\textbf{Step 4: Obtain a lower bound
+for every admissible $B$.}
+
+Combining our inequalities,
+
+\[
+\begin{aligned}
+\|A-B\|_F^2
+&\geq \|(I-P)A\|_F^2\\
+&=\|A\|_F^2-\|Q^TA\|_F^2\\
+&\geq\sum_{i=1}^{r}\sigma_i^2
+-\sum_{i=1}^{k}\sigma_i^2\\
+&=\sum_{i=k+1}^{r}\sigma_i^2.
+\end{aligned}
+\]
+
+This inequality holds for \emph{every}
+$B$ satisfying $\operatorname{rank}(B)\leq k$.
+
+\textbf{Step 5: Show that the truncated
+SVD achieves the bound.}
+
+For
+
+\[
+A_k=\sum_{i=1}^{k}\sigma_i u_i v_i^T,
+\]
+
+we have
+
+\[
+A-A_k=\sum_{i=k+1}^{r}\sigma_i u_i v_i^T.
+\]
+
+The rank-one matrices $u_i v_i^T$
+are orthonormal under the Frobenius
+inner product. Therefore,
+
+\[
+\boxed{
+\|A-A_k\|_F^2
+=\sum_{i=k+1}^{r}\sigma_i^2.
+}
+\]
+
+The lower bound is attained, proving
+
+\[
+\boxed{
+\min_{\operatorname{rank}(B)\leq k}
+\|A-B\|_F^2
+=\sum_{i=k+1}^{r}\sigma_i^2.
+}
+\]
+
+\end{proof}
+
+Notice what made this proof work.
+
+We did not begin by assuming that
+$B$ had the same singular vectors
+as $A$. Instead, we allowed an
+arbitrary rank-$k$ matrix and showed
+that an orthogonal projection onto
+its column space, or a larger
+$k$-dimensional subspace, could
+never have a greater error than $B$.
+
+We then used SVD to bound how much
+variation any such subspace can retain.
+
+% -------------------------------------------------
+\subsection{Proof Under the Spectral Norm}
+% -------------------------------------------------
+
+The spectral-norm proof uses a different
+idea. Rather than summing errors over
+all entries, we need only identify
+\emph{one} unit vector on which every
+rank-$k$ approximation must incur an
+error of at least $\sigma_{k+1}$.
+
+\begin{proof}
+
+Let $B\in\mathbb{R}^{m\times n}$ be
+any matrix with $\operatorname{rank}(B)\leq k$.
+
+\textbf{Step 1: Choose a subspace of
+dimension $k+1$.}
+
+Consider the first $k+1$ right
+singular vectors of $A$ and define
+
+\[
+W=\operatorname{span}\{v_1,\ldots,v_{k+1}\}.
+\]
+
+Because these vectors are orthonormal,
+
+\[
+\dim(W)=k+1.
+\]
+
+\textbf{Step 2: Find a unit vector
+that $B$ sends to zero.}
+
+Restrict the transformation $B$ to $W$:
+
+\[
+B|_W:W\longrightarrow\mathbb{R}^m.
+\]
+
+Its rank cannot exceed $k$.
+By the rank-nullity theorem,
+
+\[
+\begin{aligned}
+\dim\ker(B|_W)
+&=\dim(W)-\operatorname{rank}(B|_W)\\
+&\geq(k+1)-k=1.
+\end{aligned}
+\]
+
+Therefore, there exists a unit vector
+$x\in W$ such that
+
+\[
+\boxed{Bx=0,\qquad \|x\|_2=1.}
+\]
+
+This is the crucial observation:
+any matrix of rank at most $k$
+necessarily loses at least one
+nonzero direction from the
+$(k+1)$-dimensional space $W$.
+
+\textbf{Step 3: Estimate the error
+on this special vector.}
+
+Since $x\in W$, write
+
+\[
+x=\sum_{i=1}^{k+1}c_i v_i,
+\qquad
+\sum_{i=1}^{k+1}c_i^2=1.
+\]
+
+Using $Av_i=\sigma_i u_i$, we obtain
+
+\[
+Ax=\sum_{i=1}^{k+1}c_i\sigma_i u_i.
+\]
+
+The left singular vectors are
+orthonormal, so
+
+\[
+\begin{aligned}
+\|Ax\|_2^2
+&=\sum_{i=1}^{k+1}c_i^2\sigma_i^2\\
+&\geq \sigma_{k+1}^2
+\sum_{i=1}^{k+1}c_i^2\\
+&=\sigma_{k+1}^2.
+\end{aligned}
+\]
+
+But $Bx=0$, and hence
+
+\[
+\|(A-B)x\|_2
+=\|Ax\|_2\geq\sigma_{k+1}.
+\]
+
+By the definition of the spectral norm,
+
+\[
+\boxed{
+\|A-B\|_2
+=\max_{\|y\|_2=1}\|(A-B)y\|_2
+\geq\sigma_{k+1}.
+}
+\]
+
+Thus, no rank-$k$ matrix can
+achieve a smaller spectral-norm error.
+
+\textbf{Step 4: Show that $A_k$
+achieves the lower bound.}
+
+Recall that
+
+\[
+A-A_k=\sum_{i=k+1}^{r}\sigma_i u_i v_i^T.
+\]
+
+This residual has singular values
+$\sigma_{k+1},\ldots,\sigma_r$.
+Its largest singular value is
+$\sigma_{k+1}$. Therefore,
+
+\[
+\boxed{\|A-A_k\|_2=\sigma_{k+1}.}
+\]
+
+Combining the lower bound with
+this equality yields
+
+\[
+\boxed{
+\min_{\operatorname{rank}(B)\leq k}
+\|A-B\|_2=\sigma_{k+1}.
+}
+\]
+
+\end{proof}
+
+% -------------------------------------------------
+\subsection{What Do These Results Tell Us About PCA?}
+% -------------------------------------------------
+
+Let us now return to the centered data
+matrix used in Principal Component Analysis.
+
+Its truncated SVD satisfies
+
+\[
+\begin{aligned}
+A_k
+&=\sum_{i=1}^{k}\sigma_i u_i v_i^T\\
+&=U_kU_k^TA.
+\end{aligned}
+\]
+
+Thus, the matrix obtained by
+projecting onto the principal subspace
+and reconstructing the observations
+is exactly the truncated SVD.
+
+The Eckart--Young theorem now supplies
+the promised global optimality statement:
+
+\[
+\boxed{
+\begin{aligned}
+\|A-A_k\|_F
+&\leq\|A-B\|_F,\\
+\|A-A_k\|_2
+&\leq\|A-B\|_2
+\end{aligned}
+}
+\]
+
+for every $B\in\mathbb{R}^{m\times n}$
+with $\operatorname{rank}(B)\leq k$.
+
+The Frobenius result minimizes total
+squared reconstruction error, while
+the spectral result minimizes the
+worst directional reconstruction error.
+
+The theorem does not require the competing
+approximation $B$ to be an orthogonal
+projection.
+
+There is also a subtle point about
+uniqueness. The theorem guarantees
+that the truncated SVD is optimal,
+but does not guarantee that it is
+the only optimal approximation.
+
+In particular, repeated singular values
+may lead to different optimal choices, which we may later discuss in another note.
+
+We have therefore connected the
+statistical objective of preserving
+variance to the linear-algebraic
+objective of optimal low-rank
+approximation.
+
+What began as a geometric intuition
+is now supported by a rigorous theorem.
+
+% =================================================
+\section{Numerical Implementation of PCA Using Python}
+% =================================================
+
+Having established the mathematical foundations
+of Principal Component Analysis and proved the
+Eckart--Young theorem, we now illustrate these
+results through numerical experiments using Python.
+
+We implement PCA directly using NumPy's Singular
+Value Decomposition rather than relying on a
+prebuilt PCA algorithm.
+
+Throughout our implementation, we follow the
+convention adopted in this note:
+
+\[
+X\in\mathbb{R}^{m\times n},
+\]
+
+where rows represent features and columns
+represent observations.
+
+\subsection{Implementation Using a Small Dataset}
+
+We begin with a simple dataset containing
+two features and four observations:
+
+\[
+X=
+\begin{bmatrix}
+8 & 9 & 11 & 12\\
+4 & 4 & 6 & 6
+\end{bmatrix}.
+\]
+
+We first center the data by subtracting
+the mean of each feature. We then compute
+the covariance matrix and the Singular
+Value Decomposition of the centered data.
+
+Retaining only the first principal direction,
+we reduce the original two-dimensional
+observations to one-dimensional coordinates.
+
+The numerical experiment demonstrates that
+the first principal component preserves
+approximately $97.92\%$ of the total variance.
+
+We also reconstruct the observations and
+verify that the squared Frobenius error and
+spectral error agree with the formulas
+established by the Eckart--Young theorem.
+
+\subsection{Implementation Using a Real Dataset}
+
+Next, we consider a larger dataset consisting
+of handwritten digit images.
+
+The dataset contains $1797$ observations,
+each represented by $64$ numerical features
+corresponding to the pixels of an $8\times8$
+image.
+
+Following our convention, the data matrix
+has dimensions
+
+\[
+X\in\mathbb{R}^{64\times1797}.
+\]
+
+After centering the observations, we compute
+the SVD and select the smallest number of
+principal components required to preserve
+at least $90\%$ of the total variance.
+
+In this experiment, $21$ principal components
+preserve approximately $90.32\%$ of the
+total variance.
+
+Thus, we reduce the original $64$ features
+to only $21$ principal component coordinates.
+
+We subsequently reconstruct the original
+images and compare them with their
+low-rank approximations.
+
+Finally, we verify numerically that
+
+\[
+\|A-A_k\|_F^2
+=
+\sum_{i=k+1}^{r}\sigma_i^2
+\]
+
+and
+
+\[
+\|A-A_k\|_2=\sigma_{k+1},
+\]
+
+confirming the error identities established
+by the Eckart--Young theorem.
+
+\subsection{Python Source Code}
+
+The complete Python implementation for both
+experiments is provided below.
+
+The program also produces graphical illustrations
+of the principal directions, explained variance,
+and reconstructed observations.
+
+\lstinputlisting[
+    language=Python,
+    caption={Numerical implementation of PCA and
+    verification of the Eckart--Young theorem},
+    label={lst:pca_python},
+    basicstyle=\scriptsize\ttfamily,
+    breaklines=true,
+    columns=fullflexible,
+    keepspaces=true,
+    showstringspaces=false,
+    numbers=left,
+    numberstyle=\tiny
+]{PCA_implementations.py}
+
+
+% =================================================
+\section{Conclusion and Future Directions}
+% =================================================
+
+In this note, we have attempted to develop
+Principal Component Analysis from its
+fundamental mathematical principles,
+rather than treating it merely as a
+computational procedure.
+
+We began with a brief review of Singular
+Value Decomposition, examining its
+relationship with the row space, column
+space, singular vectors, and orthogonal
+projections. We then introduced the
+geometric motivation behind PCA and
+explained how variance and covariance
+allow us to identify the dominant
+directions of variation in a dataset.
+
+Building upon these ideas, we developed
+the PCA procedure step by step:
+centering the observations, computing
+the singular value decomposition,
+selecting the principal directions,
+projecting the original observations,
+and reconstructing their low-dimensional
+approximations.
+
+An important objective of our discussion
+was to explain not only how these
+operations are performed, but also
+why they are mathematically justified.
+
+In particular, we established that
+the first $k$ left singular vectors
+identify a subspace that maximizes
+the total retained variance among all
+$k$-dimensional orthogonal projections.
+
+We subsequently showed that maximizing
+the retained variance is equivalent
+to minimizing the squared Frobenius
+reconstruction error.
+
+Finally, through the Eckart--Young theorem,
+we established a considerably stronger
+result: the truncated Singular Value
+Decomposition provides an optimal
+rank-$k$ approximation among all matrices
+of rank at most $k$, under both the
+Frobenius and spectral norms.
+
+Thus, the approximation
+
+\[
+\boxed{
+A_k=\sum_{i=1}^{k}
+\sigma_i u_i v_i^T
+}
+\]
+
+is not merely a convenient construction.
+Its optimality follows from a rigorous
+mathematical theorem.
+
+We also implemented PCA using Python,
+first on a small, manually constructed
+dataset and subsequently on a larger
+dataset of handwritten digit images.
+These experiments demonstrated how
+dimensionality reduction and reconstruction
+work in practice, while numerically
+verifying the error formulas predicted
+by the Eckart--Young theorem.
+
+Nevertheless, despite its mathematical
+elegance and widespread usefulness,
+PCA is far from a perfect method,
+and the practical use of SVD is not
+without limitations.
+
+One important difficulty concerns
+categorical and mixed-type datasets.
+Ordinary PCA is based on numerical
+coordinates, Euclidean distances,
+and variance. When categorical
+variables are represented by
+arbitrary numerical labels, these
+operations may introduce artificial
+relationships between categories.
+
+Even when categorical observations
+are converted into numerical vectors
+through methods such as one-hot
+encoding, the resulting Euclidean
+geometry may not adequately reflect
+the underlying structure of the data.
+
+It is important to emphasize that
+this is primarily a limitation of
+ordinary PCA and the way the data
+is represented, rather than a failure
+of the SVD theorem itself.
+
+Methods such as Multiple Correspondence
+Analysis and techniques designed
+specifically for mixed numerical and
+categorical data provide alternative
+approaches in such situations.
+
+Another important challenge arises
+in large-scale scientific computing.
+
+Although highly reliable numerical
+algorithms for computing SVD already
+exist, calculating a full decomposition
+of an extremely large matrix can
+require substantial computational
+time and memory.
+
+This becomes particularly significant
+in applications involving high-resolution
+images, large scientific simulations,
+massive datasets, or continuously
+arriving observations.
+
+Moreover, PCA identifies linear
+subspaces and maximizes variance,
+which may not capture nonlinear
+relationships or necessarily preserve
+the information most relevant to a
+particular predictive task.
+
+Fortunately, these limitations have
+also motivated considerable progress
+in numerical linear algebra and
+machine learning.
+
+Research on randomized and truncated
+SVD algorithms, matrix sketching,
+incremental PCA, distributed computing,
+and hardware-accelerated numerical
+methods continues to improve the
+scalability of low-rank approximation.
+
+At the same time, nonlinear
+dimensionality-reduction techniques,
+methods for categorical and mixed
+data, and more flexible representation
+models offer promising alternatives
+when the assumptions of classical
+PCA are inappropriate.
+
+These developments suggest that the
+future of dimensionality reduction
+will not necessarily consist of
+replacing SVD, but rather of extending
+its computational reach and combining
+its mathematical strengths with methods
+better suited to increasingly complex
+forms of data.
+
+We may therefore expect further
+improvements in the efficiency,
+scalability, and applicability
+of low-dimensional approximation
+methods in the coming years.
+
+We conclude by emphasizing that
+understanding the limitations of
+a mathematical method is just as
+important as understanding its
+strengths.
+
+The Eckart--Young theorem tells us
+precisely when and why truncated
+SVD is optimal. It does not claim
+that low-rank approximation is
+the appropriate objective for
+every possible dataset.
+
+Recognizing this distinction allows
+us to appreciate both the remarkable
+mathematical beauty of PCA and the
+important challenges that remain.
+
+Our hope is that this exposition
+has helped the reader see PCA not
+as an obscure black-box algorithm,
+but as a natural and elegant
+consequence of elementary linear
+algebra, geometry, and optimization,
+while also encouraging further
+exploration of the rapidly evolving
+field of numerical data analysis.
+
+
+% =================================================
+% REFERENCES
+% =================================================
+
+\begin{thebibliography}{99}
+
+\bibitem{strang2006}
+G. Strang,
+\textit{Linear Algebra and Its Applications},
+4th ed.,
+Cengage Learning, 2006.
+
+\bibitem{kutz2013}
+J. N. Kutz,
+\textit{Data-Driven Modeling \& Scientific
+Computation: Methods for Complex Systems
+\& Big Data},
+Oxford University Press, 2013.
+
+\bibitem{belhaizaPCA}
+S. J. Belhaiza,
+\textit{Principal Component Analysis},
+MATH 557 video lecture,
+King Fahd University of Petroleum
+and Minerals (KFUPM).
+Available online:
+\url{https://www.youtube.com/watch?v=lpBCHV1rQTI}.
+
+\bibitem{jolliffe2002}
+I. T. Jolliffe,
+\textit{Principal Component Analysis},
+2nd ed.,
+Springer Series in Statistics,
+Springer, New York, 2002.
+\url{https://doi.org/10.1007/b98835}.
+
+\bibitem{trefethen1997}
+L. N. Trefethen and D. Bau III,
+\textit{Numerical Linear Algebra},
+Society for Industrial and
+Applied Mathematics (SIAM), 1997.
+
+\bibitem{golub2013}
+G. H. Golub and C. F. Van Loan,
+\textit{Matrix Computations},
+4th ed.,
+Johns Hopkins University Press, 2013.
+
+\bibitem{eckart1936}
+C. Eckart and G. Young,
+``The Approximation of One Matrix
+by Another of Lower Rank,''
+\textit{Psychometrika},
+vol. 1, no. 3,
+pp. 211--218, 1936.
+\url{https://doi.org/10.1007/BF02288367}.
+
+\bibitem{mirsky1960}
+L. Mirsky,
+``Symmetric Gauge Functions
+and Unitarily Invariant Norms,''
+\textit{The Quarterly Journal
+of Mathematics},
+vol. 11, no. 1,
+pp. 50--59, 1960.
+\url{https://doi.org/10.1093/qmath/11.1.50}.
+
+\bibitem{halko2011}
+N. Halko, P. G. Martinsson,
+and J. A. Tropp,
+``Finding Structure with Randomness:
+Probabilistic Algorithms for Constructing
+Approximate Matrix Decompositions,''
+\textit{SIAM Review},
+vol. 53, no. 2,
+pp. 217--288, 2011.
+\url{https://doi.org/10.1137/090771806}.
+
+\end{thebibliography}
+
+
+\end{document}
